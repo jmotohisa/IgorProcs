@@ -1,0 +1,1 @@
+Function XYToWave1(xWave, yWave,wWaveName, numPoints)	Wave xWave	Wave yWave	String wWaveName	variable numPoints		Make /O/N=(numPoints) $wWaveName	WaveStats/Q xWave	SetScale/I x V_min, V_max, $wWavename	Wave wWave = $wWaveName	wWave = interp(x, xWave, yWave)End

@@ -1,0 +1,1 @@
+#pragma rtGlobals=1		// Use modern global access method.Macro ReplaceWithNan()	Silent 1;PauseUpdate		String mat = "material3"	Variable nrs=DimSize($Mat,0),ncs=DimSize($Mat,1),Index=0,index2=0	index = 0	do		index2=0		do			if($mat[index2][index]==50)				$mat[index2][index] = Nan			endif			index2+=1		while(index2<nrs)		index+=1	while(index<ncs)end Macro

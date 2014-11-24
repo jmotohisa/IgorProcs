@@ -1,0 +1,1 @@
+Function/D sqrtfit(w,x)	Wave/D W; Variable/D x		return W[0] +W[1]* sqrt(x)End

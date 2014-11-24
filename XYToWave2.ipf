@@ -1,0 +1,1 @@
+Function XYToWave2(xWave, yWave,wWaveName, numPoints)	Wave xWave	Wave yWave	String wWaveName	variable numPoints		String cmd	String xWaveName, yWaveName	String format		xWaveName = NameOfWave(xWave)	yWaveName = NameOfWave(yWave)	format = "Interpolate/N=(%d)/E=2/Y=%s %s /X=%s"	sprintf cmd,format,numPoints,wWaveName, yWaveName, xWaveName	Execute cmdEnd
