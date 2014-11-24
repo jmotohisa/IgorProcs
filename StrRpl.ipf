@@ -1,0 +1,1 @@
+#pragma rtGlobals=1		// Use modern global access method.Function/S StrRpl(origstr,str1,str2)	String origstr,str1,str2	String deststr=""	Variable length=strlen(origstr),index=0	String ss	do		ss=origstr[index,index]		if(cmpstr(ss,str1)==0)			ss=str2		endif		deststr=deststr+ss		index+=1		if(index>length)			break		endif	while(1)	return deststrEND

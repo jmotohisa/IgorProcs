@@ -1,0 +1,1 @@
+#pragma rtGlobals=1		// Use modern global access method.Function/S wname(name)	string name	variable start,stop,length,tmp=-1	length=strlen(name)	do		start=tmp+1		tmp=strsearch(name,":",start)	while(tmp>-1)	stop=strsearch(name,".",0 )	if (stop<0)		stop=length	endif	return name[start,stop-1]END

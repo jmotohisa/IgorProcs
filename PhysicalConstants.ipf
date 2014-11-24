@@ -1,0 +1,1 @@
+#pragma rtGlobals=1		// Use modern global access method.Proc init_physicalConstants()	PauseUpdate;Silent 1	Variable/G  g_MEL=9.10956e-31,g_HBAR=1.05459e-34,g_EC=1.602e-19,g_KBC=1.38e-23	Variable/G g_EPSILON = 8.85e-12End
