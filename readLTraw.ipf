@@ -152,6 +152,10 @@ Function/S LTRename(orig,index,wvheader)
 	dest=ReplaceString(")",s,"")
 //	print var
 	unit0=UnitToUnit(unit)
+	
+	if(stringmatch(dest,"time"))
+		dest="time0"
+	endif
 	Make/O/N=(n) $dest
 	Wave wdest=$dest
 	if(index==0)

@@ -5,26 +5,36 @@
 // LoadmeepFlux.ipf
 // by J. Motohisa
 // load flux data of meep
-// ver 0.01	11/03/17 by J. Motohisa
+// ver 0.02	14/10/31
+//		 by J. Motohisa
 
-// assume that the data is store as
-//  flux1: freqency, trasmission, reflection1, reflection2,...
+// Procedure to load flux data and calculate reflectivity/tranmittance/absorption
+// assume that
+// (1) file name is 
+//		reference :${fn}-0.dat 
+//		with scatterers :${fn}-1.dat 
+// (2) the data is store as
+//		flux1: freqency, trasmission, reflection1, reflection2,...
 // (see bend-flux.ctl in meep tutorial)
 
-Macro LoadMeepFlux(path,fname,bname,wantToDisp,freqconv)
+// revision history
+//	ver 0.01 11/03/17	initial version
+//	ver 0.02 14/10/31	
+
+Macro LoadMeepFlux0(path,fname,bname,wantToDisp,freqconv)
 	String path,fname,bname
 	Variable wantToDisp=1,freqconv=1
 	Prompt path,"path name"
 	Prompt fname,"file name"
 	Prompt bname,"base wave name"
 	Prompt wanttodisp,"Display graph ?", popup,"yes;append;no"
-	Prompt freqconv,"multiply fleq with 2*pi ?",popup,"yes;no"
+	Prompt freqconv,"multiply freq with 2*pi ?",popup,"yes;no"
 	PauseUpdate; Silent 1
 	
-	LoadMeepFluxFunc(path,fname,bname,wantToDisp,freqconv)
+	FLoadMeepFlux0(path,fname,bname,wantToDisp,freqconv)
 End
 
-Function LoadMeepFluxFunc(path,fname,bname,wantToDisp,freqconv)
+Function FLoadMeepFlux0(path,fname,bname,wantToDisp,freqconv)
 	String path,fname,bname
 	Variable wantToDisp,freqconv
 	
@@ -85,31 +95,39 @@ End
 // will be named as
 //	reference: trn0_+suffix, refl0_0_+suffix, refl0_1_+suffix,...
 //	target: "trn1_"+suffix, refl0_0_0, "refl1_1_"+suffix,...
-Macro LoadMeepFlux2(fname0,fname1,suffix,withloss,wanttodisp,freqconv)
+Macro LoadMeepFlux(pathname,fname0,fname1,suffix,withloss,wanttodisp,freqconv)
 	Variable suffix,withloss=2,wanttodisp=1,freqconv=1
-	String fname0,fname1
+	String fname0,fname1,pathname="home"
+	Prompt pathName,"path name"
 	Prompt fname0,"reference file name"
 	Prompt fname1,"reflectivity fiile name"
 	Prompt suffix,"suffix number"
 	Prompt withloss,"calculate loss ?",popup,"yes;no"
 	Prompt wanttodisp,"Display graph ?", popup,"yes;append;no"
-	Prompt freqconv,"multiply fleq with 2*pi ?",popup,"yes;no"
+	Prompt freqconv,"multiply freq with 2*pi ?",popup,"yes;no"
 	PauseUpdate; Silent 1
+
+	FLoadMeepFlux1(pathname,fname0,fname1,suffix,withloss,wanttodisp,freqconv)
+End
 	
-	String pathName="home",bname
+Function FLoadMeepFlux1(pathname,fname0,fname1,suffix,withloss,wanttodisp,freqconv)
+	Variable suffix,withloss,wanttodisp,freqconv
+	String pathname,fname0,fname1
+
+	String bname
 	String rwname,twname,wname0,wname1,wn_abs1
 	Variable n1,n2,index
 
 	bname="reference"
-	n1=LoadMeepFluxFunc(pathName,fname0,bname,3,freqconv)//
+	n1=FLoadMeepFlux0(pathName,fname0,bname,3,freqconv)//
 	bname="target"
-	n2=LoadMeepFluxFunc(pathName,fname1,bname,3,freqconv)//
+	n2=FLoadMeepFlux0(pathName,fname1,bname,3,freqconv)//
 	if(n1==0 || n2==0)
-		return
+		return -1
 	endif
 	if(n1!=n2)
 		printf "Nunmber of data in reference and target file does not match. Aborting."
-		return
+		return -1
 	endif
 	
 	if(wanttodisp==1)
@@ -120,20 +138,26 @@ Macro LoadMeepFlux2(fname0,fname1,suffix,withloss,wanttodisp,freqconv)
 	do
 		rwname="reference_"+num2str(index)
 		twname="target_"+num2str(index)
-		
+		Wave wrwname =$rwname
+		Wave wtwname =$twname
+		Wave reference_0
 		if(index==0)
-			$twname/=reference_0
+			wtwname/=reference_0
 			wname0="trn0_"+num2str(suffix)
 			wname1="trn1_"+num2str(suffix)
 			Duplicate/O $rwname,$wname0;//KillWaves $rwname
 			Duplicate/O $twname,$wname1;//KillWaves $twname
 		else
-			$twname/=-reference_0
-			$rwname/=reference_0
-			wname0="refl0_"+num2str(index-1)+"_"+num2str(suffix)
-			wname1="refl1_"+num2str(index-1)+"_"+num2str(suffix)
-			Duplicate/O $rwname,$wname0;//KillWaves $rwname
-			Duplicate/O $twname,$wname1;//KillWaves $twname
+//			wrwname/=reference_0
+//			wtwname/=-reference_0
+			wname0="refl0_"+num2str(suffix)+"_"+num2istr(index-1)
+			wname1="refl1_"+num2str(suffix)+"_"+num2istr(index-1)
+			Duplicate/O wrwname,$wname0;//KillWaves $rwname
+			Duplicate/O wtwname,$wname1;//KillWaves $twname
+			Wave wwname0=$wname0
+			Wave wwname1=$wname1
+			wwname0/=reference_0
+			wwname1/=-reference_0
 		endif
 		if(wanttodisp==1 || wanttodisp==2)
 			AppendToGraph  $wname1
@@ -141,15 +165,104 @@ Macro LoadMeepFlux2(fname0,fname1,suffix,withloss,wanttodisp,freqconv)
 				ModifyGraph rgb($wname1)=(0,0,65535)
 			endif
 			if(withloss==1&&index!=0)
-				wn_abs1="abs1_"+num2str(index-1)+"_"+num2str(suffix)
-				Duplicate/O $wname1,$wn_abs1
-				$wn_abs1=1-$wname1-$("trn1_"+num2str(suffix))
-				AppendToGraph $wn_abs1
+				wn_abs1="abs1_"+num2str(suffix)+"_"+num2istr(index-1)
+				Wave wwn_abs1=$wn_abs1
+				Wave wwname1=$wname1
+				Wave wtran=$("trn1_"+num2str(suffix))
+				Duplicate/O wwname1,wwn_abs1
+				wwn_abs1=1-wwname1-wtran
+				AppendToGraph wwn_abs1
 				ModifyGraph rgb($wn_abs1)=(0,65535,0)
 			endif
 		endif
 		index+=1
 	while(index<n1)
+	SetAxis left 0,1
+End
+
+Macro LoadMeepFlux1(thePath,fn,suffix,withloss,wanttodisp,freqconv)
+	String fn,thePath
+	Variable suffix,withloss=2,wanttodisp=1,freqconv=1
+	Prompt thePath, "Name of path containing flux files", popup PathList("*", ";", "")+"_New Path_"
+	Prompt fn,"base file name"
+	Prompt suffix,"suffix number"
+	Prompt withloss,"calculate loss ?",popup,"yes;no"
+	Prompt wanttodisp,"Display graph ?", popup,"yes;append;no"
+	Prompt freqconv,"multiply freq with 2*pi ?",popup,"yes;no"
+	PauseUpdate; Silent 1
+	
+	if (CmpStr(thePath, "_New Path_") == 0)		// user selected new path ?
+		NewPath/O data			// this brings up dialog and creates or overwrites path
+		thePath = "data"
+	endif
+	
+	String fname0=fn+"-0.dat",fname1=fn+"-1.dat"
+	FLoadMeepFlux1(thePath,fname0,fname1,suffix,withloss,wanttodisp,freqconv)
+End
+
+Macro LoadMeepFlux2(thePath,fn,suffix,wanttodisp,freqconv)
+	String fn,thePath
+	Variable suffix,withloss=2,wanttodisp=1,freqconv=1
+	Prompt thePath, "Name of path containing flux files", popup PathList("*", ";", "")+"_New Path_"
+	Prompt fn,"base file name"
+	Prompt suffix,"suffix number"
+	Prompt wanttodisp,"Display graph ?", popup,"yes;append;no"
+	Prompt freqconv,"multiply freq with 2*pi ?",popup,"yes;no"
+	PauseUpdate; Silent 1
+	
+	if (CmpStr(thePath, "_New Path_") == 0)		// user selected new path ?
+		NewPath/O data			// this brings up dialog and creates or overwrites path
+		thePath = "data"
+	endif
+	
+	String fname0=fn+"-0.dat",fname1=fn+"-1.dat"
+	FLoadMeepFlux2(thePath,fname0,fname1,suffix,wanttodisp,freqconv)
+End
+
+Function FLoadMeepFlux2(pathname,fname0,fname1,suffix,wanttodisp,freqconv)
+	Variable suffix,wanttodisp,freqconv
+	String pathname,fname0,fname1
+
+	String bname
+	String rwname,twname,wname0,wname1,wn_abs1
+	Variable n1,n2,index
+
+	bname="r"
+	n1=FLoadMeepFlux0(pathName,fname0,bname,3,freqconv)//
+	bname="t"
+	n2=FLoadMeepFlux0(pathName,fname1,bname,3,freqconv)//
+	if(n1==0 || n2==0)
+		return -1
+	endif
+	if(n1!=n2)
+		printf "Nunmber of data in reference and target file does not match. Aborting."
+		return -1
+	endif
+	
+	if(wanttodisp==1)
+		Display
+	endif
+
+	index=0
+	do
+		rwname="rfrn_"+num2str(suffix)+"_"+num2str(index)
+		twname="trgt"+num2str(suffix)+"_"+num2str(index)
+		Wave wr=$("r_"+num2str(index))
+		Wave wt=$("t_"+num2str(index))
+		Duplicate/O  wr,$rwname
+		Duplicate/O  wt,$twname
+		Wave wrwname =$rwname
+		Wave wtwname =$twname
+		wname0="refl_"+num2str(suffix)+"_"+num2istr(index)
+		Duplicate/O wrwname,$wname0
+		Wave wwname0=$wname0
+		wwname0=-wtwname/wrwname
+		if(wanttodisp==1 || wanttodisp==2)
+			AppendToGraph  wwname0
+		endif
+		index+=1
+	while(index<n1)
+	SetAxis left 0,1
 End
 
 Macro GroupRename(target,suffix)
@@ -172,9 +285,9 @@ Macro GroupRename(target,suffix)
 
 	index=0
 	do
-		wn_refl0="refl0_"+num2istr(index)+"_"+num2str(suffix)
-		wn_refl1="refl1_"+num2istr(index)+"_"+num2str(suffix)
-		wn_abs1="abs1_"+num2istr(index)+"_"+num2str(suffix)
+		wn_refl0="refl0_"+num2str(suffix)+"_"+num2istr(index)
+		wn_refl1="refl1_"+num2str(suffix)+"_"+num2istr(index)
+		wn_abs1="abs1_"+num2str(suffix)+"_"+num2istr(index)
 		if(WaveExists($wn_refl0)==0)
 			break
 		endif
