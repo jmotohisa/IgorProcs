@@ -1,11 +1,12 @@
 #pragma rtGlobals=1		// Use modern global access method.
 #include "wname"
 #include "StrRpl"
+#include "MatrixOperations2"
 
 // LoadmeepFlux.ipf
 // by J. Motohisa
 // load flux data of meep
-// ver 0.02	14/10/31
+// ver 0.03	14/12/01
 //		 by J. Motohisa
 
 // Procedure to load flux data and calculate reflectivity/tranmittance/absorption
@@ -13,29 +14,51 @@
 // (1) file name is 
 //		reference :${fn}-0.dat 
 //		with scatterers :${fn}-1.dat 
-// (2) the data is store as
-//		flux1: freqency, trasmission, reflection1, reflection2,...
-// (see bend-flux.ctl in meep tutorial)
+// (2) the data is store as either of the two ways
+//		(a) flux1:, freqency, trasmission, reflection1, reflection2,...
+//			(see bend-flux.ctl in meep tutorial)
+//		(b) LoadMeepFluxRefl: flux1:, frequency,reflection1,reflection2,...
+
+// wave name(default):
+//	${fn]-0.dat -> ${fn}_ref: reference flux
+//	${fn}-1.dat -> ${fn}: (after normalization with reference flux)
 
 // revision history
 //	ver 0.01 11/03/17	initial version
-//	ver 0.02 14/10/31	
+//	ver 0.02 14/10/31	some modification
+//	ver 0.03 14/12/01	modified , data are loaded into matrix
 
-Macro LoadMeepFlux0(path,fname,bname,wantToDisp,freqconv)
-	String path,fname,bname
+Macro initLoadMeepFlux(thePath)
+	String thePath="_New_Path_";
+	Prompt thePath,"Path name",popup,PathList("*", ";", "")+"_New_Path_"
+	PauseUpdate; Silent 1;
+	
+	String/G g_path
+	String ftype;
+	ftype=".dat"
+	if (CmpStr(thePath, "_New_Path_") == 0)		// user selected new path ?
+		NewPath/O data		// this brings up dialog and creates or overwrites path
+		thePath = "data"
+	endif
+	g_path=thePath
+End
+
+// load single flux data
+Proc LoadMeepFlux_single(path,fname,wvname,wantToDisp,freqconv)
+	String path=g_path,fname,wvname
 	Variable wantToDisp=1,freqconv=1
 	Prompt path,"path name"
 	Prompt fname,"file name"
-	Prompt bname,"base wave name"
+	Prompt wvname,"wave name"
 	Prompt wanttodisp,"Display graph ?", popup,"yes;append;no"
 	Prompt freqconv,"multiply freq with 2*pi ?",popup,"yes;no"
 	PauseUpdate; Silent 1
 	
-	FLoadMeepFlux0(path,fname,bname,wantToDisp,freqconv)
+	print FLoadMeepFlux0(path,fname,wvname,wantToDisp,freqconv)
 End
 
-Function FLoadMeepFlux0(path,fname,bname,wantToDisp,freqconv)
-	String path,fname,bname
+Function FLoadMeepFlux0(path,fname,wvname,wantToDisp,freqconv)
+	String path,fname,wvname
 	Variable wantToDisp,freqconv
 	
 	Variable fmin,fmax,index,ref
@@ -51,78 +74,70 @@ Function FLoadMeepFlux0(path,fname,bname,wantToDisp,freqconv)
 		print fname
 	endif
 	
-	LoadWave/J/D/K=0/N=$"dummy"/P=$path/Q fname
+	destw0=strrpl(wname(fname),"-","_")
+	if(strlen(wvname)==0)
+		wvname=destw0
+	endif
+	
+//	load freqency data
+	LoadWave/J/D/N=dummy/K=0/L={0,0,0,1,1} /P=$path/Q fname
 	if(V_flag==0)
 		return V_flag
 	endif
-
-	destw0=strrpl(wname(fname),"-","_")
-	if(strlen(bname)==0)
-		bname=destw0
-	endif
-	
-	if(wantToDisp==1)
-		Display /W=(3,41,636,476)
-	endif
-
-	xwname=StringFromList(1,S_waveNames,";")
+	xwname=StringFromList(0,S_waveNames,";")
 	Wave xwnamew=$xwname
 	if(freqconv==1)
 		xwnamew*=2*pi
 	Endif
-
-	WaveStats/Q $xwname
+	WaveStats/Q xwnamew
 	fmin=V_min
 	fmax=V_max
 
-	index=0
-	do
-		dwname=StringFromList(2+index,S_waveNames,";")
-		if(strlen(dwname)==0)
-			break
-		endif
-		dest=bname+"_"+num2str(index)
-		Duplicate/O $dwname,$dest
-		SetScale x,fmin,fmax,"",$dest
-		if(wantToDisp==1 || wantToDisp==2)
-			AppendToGraph $dest
-		endif
-		index+=1
-	while(1)
-	return V_flag-2 // number of waves (including transmission)
+// load flux data
+	LoadWave/J/M/D/N=dummy/K=0/L={0,0,0,2,0} /P=$path/Q fname
+	if(V_flag==0)
+		return V_flag
+	endif
+	dwname=StringFromList(0,S_waveNames,";")
+	SetScale x,fmin,fmax,"",$dwname
+	Duplicate/O $dwname,$wvname
+
+	if(wantToDisp==1)
+		MatrixWavePlotFunc(wvname,1,1,"_none_")
+	endif
+
+	return DimSize($wvname,1) // number of waves (including transmission)
 End
 
 // will be named as
 //	reference: trn0_+suffix, refl0_0_+suffix, refl0_1_+suffix,...
 //	target: "trn1_"+suffix, refl0_0_0, "refl1_1_"+suffix,...
-Macro LoadMeepFlux(pathname,fname0,fname1,suffix,withloss,wanttodisp,freqconv)
-	Variable suffix,withloss=2,wanttodisp=1,freqconv=1
-	String fname0,fname1,pathname="home"
+Macro LoadMeepFluxRefl(pathname,fname,bname,withloss,wanttodisp,freqconv,squared)
+	Variable suffix,withloss=2,wanttodisp=1,freqconv=1,squared=1
+	String fname,bname,pathname=g_path
 	Prompt pathName,"path name"
-	Prompt fname0,"reference file name"
-	Prompt fname1,"reflectivity fiile name"
-	Prompt suffix,"suffix number"
+	Prompt fname,"base file name"
+	Prompt bname,"base wave name"
 	Prompt withloss,"calculate loss ?",popup,"yes;no"
 	Prompt wanttodisp,"Display graph ?", popup,"yes;append;no"
 	Prompt freqconv,"multiply freq with 2*pi ?",popup,"yes;no"
+	Prompt squared,"take square root ?",popup,"yes;no"
 	PauseUpdate; Silent 1
 
-	FLoadMeepFlux1(pathname,fname0,fname1,suffix,withloss,wanttodisp,freqconv)
+	FLoadMeepFluxRefl(pathname,fname,bname,withloss,wanttodisp,freqconv,squared)
 End
 	
-Function FLoadMeepFlux1(pathname,fname0,fname1,suffix,withloss,wanttodisp,freqconv)
-	Variable suffix,withloss,wanttodisp,freqconv
-	String pathname,fname0,fname1
+Function FLoadMeepFluxRefl(pathname,fname,bname,withloss,wanttodisp,freqconv,squared)
+	Variable withloss,wanttodisp,freqconv,squared
+	String pathname,fname,bname
 
-	String bname
 	String rwname,twname,wname0,wname1,wn_abs1
 	Variable n1,n2,index
 
-	bname="reference"
-	n1=FLoadMeepFlux0(pathName,fname0,bname,3,freqconv)//
-	bname="target"
-	n2=FLoadMeepFlux0(pathName,fname1,bname,3,freqconv)//
+	n1=FLoadMeepFlux0(pathName,fname+"-0.dat","ref",3,freqconv)//
+	n2=FLoadMeepFlux0(pathName,fname+"-1.dat","tgt",3,freqconv)//
 	if(n1==0 || n2==0)
+		printf "Cannot load data from ",fname,"-0.dat or ",fname,"-1.dat. Aborting."
 		return -1
 	endif
 	if(n1!=n2)
@@ -130,53 +145,73 @@ Function FLoadMeepFlux1(pathname,fname0,fname1,suffix,withloss,wanttodisp,freqco
 		return -1
 	endif
 	
-	if(wanttodisp==1)
-		Display
+	if(strlen(bname)==0)
+		bname=fname
 	endif
+	rwname = bname+"_ref"
+	twname = bname
+	Duplicate/O ref,$rwname
+	Duplicate/O tgt,$twname
+	Wave wrwname=$rwname
+	Wave wtwname=$twname
 
 	index=0
 	do
-		rwname="reference_"+num2str(index)
-		twname="target_"+num2str(index)
-		Wave wrwname =$rwname
-		Wave wtwname =$twname
-		Wave reference_0
-		if(index==0)
-			wtwname/=reference_0
-			wname0="trn0_"+num2str(suffix)
-			wname1="trn1_"+num2str(suffix)
-			Duplicate/O $rwname,$wname0;//KillWaves $rwname
-			Duplicate/O $twname,$wname1;//KillWaves $twname
-		else
+		wtwname[][index]/=-wrwname[p][index]
+
+//		rwname="reference_"+num2str(index)
+//		twname="target_"+num2str(index)
+//		Wave wrwname =$rwname
+//		Wave wtwname =$twname
+//		Wave reference_0
+//		if(index==0)
+//			wtwname/=reference_0
+//			wname0="trn0_"+num2str(suffix)
+//			wname1="trn1_"+num2str(suffix)
+//			Duplicate/O $rwname,$wname0;//KillWaves $rwname
+//			Duplicate/O $twname,$wname1;//KillWaves $twname
+//		else
 //			wrwname/=reference_0
 //			wtwname/=-reference_0
-			wname0="refl0_"+num2str(suffix)+"_"+num2istr(index-1)
-			wname1="refl1_"+num2str(suffix)+"_"+num2istr(index-1)
-			Duplicate/O wrwname,$wname0;//KillWaves $rwname
-			Duplicate/O wtwname,$wname1;//KillWaves $twname
-			Wave wwname0=$wname0
-			Wave wwname1=$wname1
-			wwname0/=reference_0
-			wwname1/=-reference_0
-		endif
-		if(wanttodisp==1 || wanttodisp==2)
-			AppendToGraph  $wname1
-			if(index!=0)
-				ModifyGraph rgb($wname1)=(0,0,65535)
-			endif
-			if(withloss==1&&index!=0)
-				wn_abs1="abs1_"+num2str(suffix)+"_"+num2istr(index-1)
-				Wave wwn_abs1=$wn_abs1
-				Wave wwname1=$wname1
-				Wave wtran=$("trn1_"+num2str(suffix))
-				Duplicate/O wwname1,wwn_abs1
-				wwn_abs1=1-wwname1-wtran
-				AppendToGraph wwn_abs1
-				ModifyGraph rgb($wn_abs1)=(0,65535,0)
-			endif
-		endif
+//			wname0="refl0_"+num2str(suffix)+"_"+num2istr(index-1)
+//			wname1="refl1_"+num2str(suffix)+"_"+num2istr(index-1)
+//			Duplicate/O wrwname,$wname0;//KillWaves $rwname
+//			Duplicate/O wtwname,$wname1;//KillWaves $twname
+//			Wave wwname0=$wname0
+//			Wave wwname1=$wname1
+//			wwname0/=reference_0
+//			wwname1/=-reference_0
+//		endif
+//		if(wanttodisp==1 || wanttodisp==2)
+//			AppendToGraph  $wname1
+//			if(index!=0)
+//				ModifyGraph rgb($wname1)=(0,0,65535)
+//			endif
+//			if(withloss==1&&index!=0)
+//				wn_abs1="abs1_"+num2str(suffix)+"_"+num2istr(index-1)
+//				Wave wwn_abs1=$wn_abs1
+//				Wave wwname1=$wname1
+//				Wave wtran=$("trn1_"+num2str(suffix))
+//				Duplicate/O wwname1,wwn_abs1
+//				wwn_abs1=1-wwname1-wtran
+//				AppendToGraph wwn_abs1
+//				ModifyGraph rgb($wn_abs1)=(0,65535,0)
+//			endif
+//		endif
 		index+=1
 	while(index<n1)
+	
+	if(squared==1)
+		wtwname = sqrt(wtwname)
+	endif
+	
+	if(wantToDisp==1)
+		MatrixWavePlotFunc(twname,1,1,"_none_")
+	else
+		if(wantToDisp==2)
+			MatrixWavePlotFunc(twname,2,1,"_none_")
+		endif
+	endif
 	SetAxis left 0,1
 End
 
