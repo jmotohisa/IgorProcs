@@ -33,7 +33,7 @@ Menu "StepIndexFiber"
 	"Show vector field XY",Show_Field_XY()
 	"Initialize for dispersion calculation lam",initialize_calculate_dispersion()
 	"dispersion: beta vs lambda",calculate_dispersion_LambdaBeta()
-	"dispersion: beta vs omega (all)",Dispersion_OmegaBetaAll()
+	"dispersion: beta vs omega",Dispersion_OmegaBetaAll()
 End
 
 // Initialization
