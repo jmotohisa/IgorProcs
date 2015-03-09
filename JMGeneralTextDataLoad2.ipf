@@ -12,12 +12,22 @@
 //	- scale waves with specified column
 //
 //	ver 0.1		2013/06/16	first version
-Function JMGTDLinit()
+//	ver 0.2		2015/02/28	unit information added
+Function JMGTDLinit(use_DSO)
+	Variable use_DSO
 	String/G g_JMGTD_wname
+	if(use_DSO==1)
+// create data set
+//	DSOinitFunc(dsname0,prefix,suffixlist)
+//	DSOCreate0(dsetindex,1) 
+//	dsetnm=dsname0+num2istr(dsetindex)
+	endif
 End
 
-Function JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,scalenum,fquiet)
-	String fName,pName,extName,prefix,suffixlist
+//! @param fname, pname,extName
+//! @return number of waves loaded
+Function JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,scalenum,xunit,yunit,fquiet)
+	String fName,pName,extName,prefix,suffixlist,xunit,yunit
 	Variable index,scalenum,fquiet
 	
 	Variable ref,nlwave0,nlwave,xmin,xmax,index0
@@ -35,28 +45,17 @@ Function JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,sca
 	endif
 	nlwave=V_flag
 
-//sort
-//	index0=0
-//	wvlist0=""
-//	do
-//		if(index0!=scalenum)
-//			cmd=wvlist0+","+StringFromList(scalenum,S_WaveNames,";")
-//		endif
-//		index0+=1
-//	while(index0<nlwave)
-
 // determine scaling	
 	if(scalenum>=0)
 		snm=StringFromList(scalenum,S_WaveNames,";")
 		WaveStats/Q $snm
 		xmin=V_min
 		xmax=V_max
-//		cmdstr="Sort "+snm+","+snm+wvlist0
-//		Execute cmdstr
 	else
 		snm=""
 	endif
 	
+// sort
 	if(strlen(snm)>0)
 		index0=0
 		Do
@@ -70,6 +69,7 @@ Function JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,sca
 		Execute cmdstr
 	Endif
 	
+	// detemine base wave name : use prefix+index or filename
 	Variable suffixindex
 	String orig,dest,dest0,destsuffix
 	index0=0
@@ -100,9 +100,14 @@ Function JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,sca
 				print dest
 			Endif
 			AddStdNoteToWave($dest,pname,fname)
-			if(scalenum>=0)
-				SetScale/I x,xmin,xmax,"",$dest
-			endif
+			SetScale/I x,xmin,xmax,xunit,$dest
+//			if(scalenum>=0)
+				if(index0==scalenum)
+					SetScale d 0,0,xunit, $dest
+				else
+					SetScale d 0,0,yunit, $dest
+				endif
+//			endif
 			nlwave0+=1
 		endif
 		index0+=1
@@ -110,8 +115,9 @@ Function JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,sca
 	return(nlwave0)
 End
 
-Proc JMGeneralDatLoader2(fname,pname,extName,index,prefix,suffixlist,scalenum,fquiet)
-	String fName,pName="home",extName=".dat",prefix="T",suffixlist="0;1"
+// some sort of skelton
+Proc JMGeneralDatLoader2(fname,pname,extName,index,prefix,suffixlist,scalenum,xunit,yunit,fquiet)
+	String fName,pName="home",extName=".dat",prefix="T",suffixlist="0;1",xunit="m",yunit="eV"
 	Variable index,scalenum,fquiet
 	Prompt fname,"File Name"
 	Prompt pname,"Path Name"
@@ -120,15 +126,17 @@ Proc JMGeneralDatLoader2(fname,pname,extName,index,prefix,suffixlist,scalenum,fq
 	Prompt prefix,"wave prefix"	
 	Prompt suffixList,"suffix list of waves"
 	Prompt scalenum,"Column No. for scale waves (<0 for without scaling"
+	Prompt xunit,"x-axix unit"
+	Prompt yunit,"y-axis unit"
 	Prompt fquiet,"quiet ?",popup,"yes;no"
 	PauseUpdate; Silent 1
 	
-	JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,scalenum,fquiet)
+	JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,scalenum,xunit,yunit,fquiet)
 End
 
 // Load multiple data (assume data set is initialized)
-Function JMGTDL2multi0func(dsetnm0,prefix,thePath,fNamemask,ftype,suffixlist,scalenum,dispGraph,fquiet)
-	String dsetnm0,prefix,thePath,fNamemask,ftype,suffixlist
+Function JMGTDL2multi0func(dsetnm0,prefix,thePath,fNamemask,ftype,suffixlist,scalenum,dispGraph,xunit,yunit,fquiet)
+	String dsetnm0,prefix,thePath,fNamemask,ftype,suffixlist,xunit,yunit
 	Variable scalenum,dispGraph,fquiet
 
 	String fileName,fileName0
@@ -167,7 +175,7 @@ Function JMGTDL2multi0func(dsetnm0,prefix,thePath,fNamemask,ftype,suffixlist,sca
 		gotfile2=StringMatch(fileName0,fNameMask)
 		if (gotFile && (gotFile2 || strlen(fNameMask)==0))
 			print prefix+num2istr(index), ":", fileName
-			JMGeneralDatLoaderFunc2(fileName,thePath,ftype,index,prefix,suffixlist,scalenum,fquiet)
+			JMGeneralDatLoaderFunc2(fileName,thePath,ftype,index,prefix,suffixlist,scalenum,xunit,yunit,fquiet)
 //			Textbox/C/N=tb_file/F=0/A=MT/X=-30/Y=5 "File: "+fileName
 //			DoUpdate	// make sure graph updated before printing
 //			if (wantToPrint == 1)
