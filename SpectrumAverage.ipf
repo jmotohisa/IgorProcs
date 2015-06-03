@@ -17,7 +17,7 @@ Function SpectrumAverage0(ywave,target,xstart,xend)
 	return(c)
 End
 
-Function SpectrumAverageXY0(ywave,xwave,target,xstart,xend)
+Function SpectrumAverageXY0(xwave,ywave,target,xstart,xend)
 	String  ywave,xwave,target
 	Variable xstart,xend
 	
@@ -37,4 +37,20 @@ Function SpectrumAverageXY0(ywave,xwave,target,xstart,xend)
 		endif
 	endif
 	return(c)
+End
+
+Function SpectrumAverage(ywave,xstart,xend)
+	Wave  ywave
+	Variable xstart,xend
+	Wave dummy
+	Duplicate/O ywave,dummy
+	Return(SpectrumAverage0(NameofWave(ywave),"dummy",xstart,xend))
+End
+
+Function SpectrumAverageXY(xwave,ywave,xstart,xend)
+	Wave  ywave,xwave
+	Variable xstart,xend
+	Wave dummy
+	Duplicate/O ywave,dummy
+	Return(SpectrumAverageXY0(NameofWave(xwave),NameofWave(ywave),"dummy",xstart,xend))
 End
