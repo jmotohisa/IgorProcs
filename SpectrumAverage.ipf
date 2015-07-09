@@ -1,5 +1,10 @@
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
+// SpectrumAverage.ipf : take aveage of the spectrum (to find peak position)
+// by J. Motohisa
+
+// ver 0.01a: 15/06/03 first commitment
+
 Function SpectrumAverage0(ywave,target,xstart,xend)
 	String  ywave,target
 	Variable xstart,xend
