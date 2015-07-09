@@ -41,4 +41,5 @@ Function/S Loadsqw_1Dsub1(fileName,pathName,bwname,index,suffix,datpos,xscale,xu
 End
 
 // some examples
-// JMGeneralDatLoader2("","",".dat",1,"cp",";pos;psi;Ec;nelec;phole;jn;jp;;;",1,"m","eV",0)
+// JMGeneralDatLoader2("","",".dat",1,"cp",";pos;psi;Ec;Ev;nelec;phole;jn;jp;;;",1,"m","eV",0)
+// JMGeneralDatLoader2("","",".dat",1,"cp",";pos;psi;Ec;Ev;nelec;phole;rho",1,"m","eV",0)
