@@ -41,5 +41,7 @@ Function/S Loadsqw_1Dsub1(fileName,pathName,bwname,index,suffix,datpos,xscale,xu
 End
 
 // some examples
-// JMGeneralDatLoader2("","",".dat",1,"cp",";pos;psi;Ec;Ev;nelec;phole;jn;jp;;;",1,"m","eV",0)
+// JMGeneralDatLoader2("","",".dat",1,"cp",";pos;psi;Ec;Ev;nelec;phole;jn;jp;SRH;AUGER;RAD",1,"m","eV",0)
 // JMGeneralDatLoader2("","",".dat",1,"cp",";pos;psi;Ec;Ev;nelec;phole;rho",1,"m","eV",0)
+// JMGeneralDatLoader2("","",".dat",1,"cp",";pos;psi;Ec;Ev;nelec;phole;;",1,"m","eV",0)
+//        x       potential       EcEdge  EvEdge  electron        hole    Jn      Jp      SRH     AUGER   RAD
