@@ -4,11 +4,12 @@
 #include "BandGaps"
 
 // Calculation of Fermi energy and carrier concentration in semiconductors
-// requires FermiIntegral.xop
+// requires GSLXOP.xop
 //
 //	08/09/12 ver. 0.1a2 by J. Motohisa
 //
 //	revision history
+//		15/08/04 ver 0.1a3 sum bug fixed
 //		08/09/12 ver 0.1a2
 //		08/07/27 ver 0.1c1 initial version
 
@@ -17,9 +18,11 @@ Proc InitFermi()
 	String cmd,fermi_param_wave="fermi_param"
 	
 	String/G g_fermi_param_wave=fermi_param_wave
-	Make/D/O/N=11 g_fermi_param_waves
+	init_physicalConstants()
+
+//	Make/D/O/N=11 g_fermi_param_waves
 // make waves
-	cmd="Make/O/D/N=10 "+g_fermi_param_wave;execute cmd
+	cmd="Make/O/D/N=11 "+g_fermi_param_wave;execute cmd
 	cmd="SetDimLabel 0,0,'temp' "+g_fermi_param_wave;execute cmd  // temperature
 	cmd="SetDimLabel 0,1,'Egap' "+g_fermi_param_wave;execute cmd  // band gap energy
 	cmd="SetDimLabel 0,2,'edos_CB' "+g_fermi_param_wave;execute cmd  // effective density of states in CB
@@ -30,7 +33,7 @@ Proc InitFermi()
 	cmd="SetDimLabel 0,7,'Na' "+g_fermi_param_wave;execute cmd  // donor density
 	cmd="SetDimLabel 0,8,'Eacceptor' "+g_fermi_param_wave;execute cmd  // donor level (measured from CB edge)
 	cmd="SetDimLabel 0,9,'g_A' "+g_fermi_param_wave;execute cmd  // donoe level degeneracy factor
-	cmd="SetDimLabel 0,10,'Efermi' "+g_fermi_param_wave;execute cmd  // Fermi Level
+	cmd="SetDimLabel 0,10,'Efermi',"+g_fermi_param_wave;execute cmd  // Fermi Level
 	
 	init_materials()
 End Proc
@@ -162,7 +165,7 @@ Function/D n_electron0(temp, ene, effdos)
 	Variable eta
 	NVAR g_KBC,g_EC
 	eta = ene*g_EC/(g_KBC*temp)
-	return(effdos*FermiIntegralpHalf(eta))
+	return(effdos*gslFermiIntpHalf(eta))
 End Function
 
 Function n_electron(mat,temp, ene)
@@ -183,7 +186,7 @@ Function p_hole0(temp, ene, effdos)
 	Variable eta
 	NVAR g_KBC,g_EC
 	eta = ene*g_EC/(g_KBC*temp)
-	return(effdos*FermiIntegralpHalf(eta))
+	return(effdos*gslFermiIntpHalf(eta))
 End Function
 
 Function p_hole(mat,temp, ene)
