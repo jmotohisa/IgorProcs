@@ -10,13 +10,14 @@
 //	ver 0.02c	2012/12/11	LoadFreqsMeep added
 //	ver 0.1a	2013/06/04	loadharminv1 added
 //	ver 0.2		2013/08/31	Textdata loader is changed to original JMGeneralTextDataLoad
+//	ver 0.2a	2015/11/14	JMGeneralTextDataLoad is changed to JMGeneralTextDataLoad2
 
 #include "MatrixOperations2"
 #include "h5procs"
 #include "StrRpl"
 #include "wname"
 #include "AddNoteToWave"
-#include "JMGeneralTextDataLoad"
+#include "JMGeneralTextDataLoad2" menu=0
 
 // some of the functions/macros are common with mpb
 #include "MPBProcs" menu=0
@@ -612,12 +613,14 @@ Function LoadHarminv1(pathname,filename,index)
 	String suffixlist,prefix=""
 	String extName=".dat",bname
 	Variable dispTable=2,dispGraph=2,col=-1,fquiet=2
+	String xunit="",yunit=""
 
 //	SVAR g_JMGTD_wname
 	suffixlist="h_wl;h_Q"
-	
 //	JMGeneralDatLoaderFunc(filename,pathname,extName,bname,suffixlist,scalenum0+1,dispTable,dispGraph,fquiet)
-	JMGeneralDatLoaderFunc(filename,pathname,extName,prefix,suffixlist,col,2,2,fquiet)
+//	JMGeneralDatLoaderFunc(filename,pathname,extName,prefix,suffixlist,col,2,2,fquiet)
+	JMGeneralDatLoaderFunc2(filename,pathname,extName,index,prefix,suffixlist,col,xunit,yunit,fquiet)
+
 //	if(dispGraph==1)
 //		JMGTDDisplay(g_JMGTD_wname,suffixlist,1,0)
 //	endif
@@ -649,12 +652,13 @@ Function LoadLDOS1(pathname,filename,index)
 	Variable index
 	
 	String suffixlist,prefix=""
-	String extName=".dat"
+	String extName=".dat",xunit="",yunit=""
 	Variable dispTable=2,dispGraph=1,col=-1,fquiet=2
 	SVAR g_JMGTD_wname
 
 	suffixlist=";fldos;ldos"
-	JMGeneralDatLoaderFunc(filename,pathname,extName,prefix,suffixlist,col,2,2,fquiet)
+//	JMGeneralDatLoaderFunc(filename,pathname,extName,prefix,suffixlist,col,2,2,fquiet)
+	JMGeneralDatLoaderFunc2(filename,pathname,extName,index,prefix,suffixlist,col,xunit,yunit,fquiet)
 	if(dispGraph==1)
 		JMGTDDisplay(g_JMGTD_wname,suffixlist,2,1)
 	endif
@@ -711,4 +715,14 @@ Function LoadLDOS1_orig(pathname,filename,suffix)
 	SVAR g_meepLDOS
 	wlist=";fldos;ldos"
 //	JMGeneralDatLoaderFunc(filename,pathname,g_meepLDOS,suffix,col,dispTable,dispGraph,fquiet)
+End
+
+Function LoadMeepDispersion(fname,pname,index,prefix,fquiet)
+	String fName,pName,prefix
+	Variable index,fquiet
+	
+	String suffixlist,extName=".dat",xunit="",yunit=""
+	Variable scalenum=2
+	suffixlist=";kred;k;freq;omega;wl;Q"
+	JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,scalenum,xunit,yunit,fquiet)
 End

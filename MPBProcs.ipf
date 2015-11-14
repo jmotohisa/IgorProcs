@@ -4,16 +4,37 @@
 // some macros to work with  MPB
 //
 //	ver 0.01	2013/08/31-09/02	develepment started 
+//	ver 0.1		2015/11/14	JMGeneralTextDataLoad is changed to JMGeneralTextDataLoad2
 
 //#include "MatrixOperations2"
 //#include "h5procs"
 //#include "StrRpl"
 //#include "wname"
-//#include "AddNoteToWave"
-#include "JMGeneralTextDataLoad" menus=0
 
-Function MPB_init()
-	JMGTDLinit("data","","")
+#include "AddNoteToWave"
+#include "JMGeneralTextDataLoad2" menus=0
+
+Macro init_MPB(pathname,prefix)
+	String pathname="_New Path_",prefix
+	Prompt pathname, "Name of path containing text files", popup PathList("*", ";", "")+"_New Path_"
+	Prompt prefix,"prefix for file name"
+	PauseUpdate;Silent 1
+
+	if(strlen(prefix)==0)
+		prefix="res0"
+	endif	
+	JMGTDLinit("data",prefix,"")
+
+	if (CmpStr(pathname, "_New Path_") == 0)		// user selected new path ?
+		NewPath/O mpb			// this brings up dialog and creates or overwrites path
+		pathname = "mpb"
+	endif
+
+	String savDF = GetDataFolder(1)
+	SetDataFolder root:Packages:JMGTDL:
+//	SVAR g_path
+	g_path=pathname
+	SetDataFolder savDF
 End
 
 Macro LoadMPBFreqs(fname,pname,bname,scalenum0,fconv,dispTable,dispGraph,fquiet)
@@ -32,18 +53,19 @@ Macro LoadMPBFreqs(fname,pname,bname,scalenum0,fconv,dispTable,dispGraph,fquiet)
 	FLoadMPBFreqs(fname,pname,bname,scalenum0,fconv,dispTable,dispGraph,fquiet)
 End
 
-Function FLoadMPBFreqs(fname,pname,bname,scalenum0,fconv,dispTable,dispGraph,fquiet)
-	String fname,pname,bname
-	Variable scalenum0,dispTable,dispGraph,fquiet
+Function FLoadMPBFreqs(fname,pname,bname,index,prefix,scalenum0,fconv,dispTable,dispGraph,fquiet)
+	String fname,pname,bname,prefix
+	Variable scalenum0,dispTable,dispGraph,fquiet,index
 	Variable fconv
 
 	String suffixlist=";;kx;ky;kz;kk;#"
-	String ftype=".dat"
+	String extName=".dat",xunit="",yunit=""
 	Variable ndata
 	Variable xmin,dx
 	String smn
 
-	ndata=JMGeneralDatLoaderFunc(fname,pname,ftype,bname,suffixlist,scalenum0+1,dispTable,dispGraph,fquiet)
+//	ndata=JMGeneralDatLoaderFunc(fname,pname,extName,bname,suffixlist,scalenum0+1,dispTable,dispGraph,fquiet)
+	ndata=JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,scalenum0+1,xunit,yunit,fquiet)
 	ndata=ndata-4
 	
 	String savDF=GetDataFolder(1)
