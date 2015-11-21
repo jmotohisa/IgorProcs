@@ -125,7 +125,7 @@ Proc JMGeneralDatLoader2(fname,pname,extName,index,prefix,suffixlist,scalenum,xu
 	Prompt index,"wave index"
 	Prompt prefix,"wave prefix"	
 	Prompt suffixList,"suffix list of waves"
-	Prompt scalenum,"Column No. for scale waves (<0 for without scaling"
+	Prompt scalenum,"Column No. for scale waves (<0 for without scaling)"
 	Prompt xunit,"x-axix unit"
 	Prompt yunit,"y-axis unit"
 	Prompt fquiet,"quiet ?",popup,"yes;no"
