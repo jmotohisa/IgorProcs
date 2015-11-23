@@ -18,6 +18,7 @@
 #include "wname"
 #include "AddNoteToWave"
 #include "JMGeneralTextDataLoad2" menu=0
+#include "3DMatrixOperations"
 
 // some of the functions/macros are common with mpb
 #include "MPBProcs" menu=0
@@ -723,6 +724,6 @@ Function LoadMeepDispersion(fname,pname,index,prefix,fquiet)
 	
 	String suffixlist,extName=".dat",xunit="",yunit=""
 	Variable scalenum=2
-	suffixlist=";kred;k;freq;omega;wl;Q"
+	suffixlist=";kred;k;freq;omega;wl;neff;Q"
 	JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,scalenum,xunit,yunit,fquiet)
 End
