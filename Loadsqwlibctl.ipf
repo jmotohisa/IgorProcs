@@ -7,14 +7,26 @@
 //	2015/02/17	initial version
 
 #include "JMGeneralTextDataLoad2"
+#include "DataSetOperations"
 
 Function Loadsqwlibctl_init()
-	JMGTDLinit(0)
-	SVAR g_JMGTD_wname
-// create data set
-//	DSOinitFunc(dsname0,prefix,suffixlist)
+	Variable use_DSO=1
+	String dsetnm="data"
+	Variable DSOindex=FDSO_getIndex()
+	NVAR g_DSOindex
+
+//	String/G g_JMGTD_wname
+	
+	String prefix,suffixlist
+	if(use_DSO==1)
+	// create data set
+		FDSOinit0(dsetnm)
+//		FDSOinit(dsetnm,prefix,suffixlist)
+		DSOCreate0(0,1)
+		dsetnm=dsetnm+num2istr(FDSO_getIndex()-1)
 //	DSOCreate0(dsetindex,1) 
 //	dsetnm=dsname0+num2istr(dsetindex)
+	endif
 End
 
 //! read 1D column data
@@ -40,8 +52,19 @@ Function/S Loadsqw_1Dsub1(fileName,pathName,bwname,index,suffix,datpos,xscale,xu
 	JMGeneralDatLoaderFunc2(fileName,pathName,extName,index,bwname,suffixlist,scalenum,xunit,yunit,fquiet)
 End
 
+Function load_pc1d(prefix)
+	String prefix
+	
+	Variable use_DSO=1
+	String suffixlist=";pos;psi;Ec;Ev;nelec;phole;jn;jp;SRH;AUGER;RAD;OPT"
+	JMGeneralDatLoaderFunc2("","",".dat",1,prefix,suffixlist,1,"m","eV",0)
+	if(use_DSO==1)
+		FDSOAppend(prefix)
+	endif
+End
+
 // some examples
-// JMGeneralDatLoader2("","",".dat",1,"cp",";pos;psi;Ec;Ev;nelec;phole;jn;jp;SRH;AUGER;RAD",1,"m","eV",0)
+// JMGeneralDatLoader2("","",".dat",1,"cp",";pos;psi;Ec;Ev;nelec;phole;jn;jp;SRH;AUGER;RAD;OPT",1,"m","eV",0)
 // JMGeneralDatLoader2("","",".dat",1,"cp",";pos;psi;Ec;Ev;nelec;phole;rho",1,"m","eV",0)
 // JMGeneralDatLoader2("","",".dat",1,"cp",";pos;psi;Ec;Ev;nelec;phole;;",1,"m","eV",0)
 //        x       potential       EcEdge  EvEdge  electron        hole    Jn      Jp      SRH     AUGER   RAD
