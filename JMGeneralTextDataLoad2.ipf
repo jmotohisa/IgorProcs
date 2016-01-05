@@ -13,18 +13,23 @@
 //
 //	ver 0.1		2013/06/16	first version
 //	ver 0.2		2015/02/28	unit information added
-Function JMGTDLinit(use_DSO,dsetnm)
+
+Function/T JMGTDLinit(use_DSO,dsetnm)
 	Variable use_DSO
 	String dsetnm
 	String/G g_JMGTD_wname
 	
 	String prefix,suffixlist
+	Variable index
 	if(use_DSO==1)
-// create data set
-	FDSOinit(dsetnm,prefix,suffixlist)
-//	DSOCreate0(dsetindex,1) 
-//	dsetnm=dsname0+num2istr(dsetindex)
+	// create data set
+		FDSOinit0(dsetnm)
+//		FDSOinit(dsetnm,prefix,suffixlist)
+		index=DSOCreate0(0,1)
+		dsetnm=dsetnm+num2istr(FDSO_getIndex()-1)
+		DSODisplayTable(dsetnm)
 	endif
+	return(dsetnm)
 End
 
 //! @param fname, pname,extName

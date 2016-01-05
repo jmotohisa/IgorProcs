@@ -4,28 +4,21 @@
 // by J. Motohisa
 // load calculated results of pcsmatrix
 
-//	2015/02/17	initial version
+//	2016/01/05	ver 0.1a	modified to work with DataSetOperations
+//	2015/02/17	ver 0.01	initial version
 
 #include "JMGeneralTextDataLoad2"
 #include "DataSetOperations"
 
-Function Loadsqwlibctl_init()
-	Variable use_DSO=1
-	String dsetnm="data"
-	Variable DSOindex=FDSO_getIndex()
-	NVAR g_DSOindex
-
-//	String/G g_JMGTD_wname
+Function Loadsqwlibctl_init(use_DSO)
+	Variable use_DSO
 	
-	String prefix,suffixlist
-	if(use_DSO==1)
-	// create data set
-		FDSOinit0(dsetnm)
-//		FDSOinit(dsetnm,prefix,suffixlist)
-		DSOCreate0(0,1)
-		dsetnm=dsetnm+num2istr(FDSO_getIndex()-1)
-//	DSOCreate0(dsetindex,1) 
-//	dsetnm=dsname0+num2istr(dsetindex)
+	Variable/g g_use_DSO=use_DSO
+	String dsetnm="data"
+	
+	dsetnm=JMGTDLinit(use_DSO,dsetnm)
+	if(use_DSO)
+		Redimension/N=1 $dsetnm
 	endif
 End
 
@@ -52,14 +45,18 @@ Function/S Loadsqw_1Dsub1(fileName,pathName,bwname,index,suffix,datpos,xscale,xu
 	JMGeneralDatLoaderFunc2(fileName,pathName,extName,index,bwname,suffixlist,scalenum,xunit,yunit,fquiet)
 End
 
-Function load_pc1d(prefix)
-	String prefix
+Function load_pc1d(fname,pname,prefix,index)
+	String fname,pname,prefix
+	Variable index
 	
-	Variable use_DSO=1
+	NVAR g_use_DSO
 	String suffixlist=";pos;psi;Ec;Ev;nelec;phole;jn;jp;SRH;AUGER;RAD;OPT"
-	JMGeneralDatLoaderFunc2("","",".dat",1,prefix,suffixlist,1,"m","eV",0)
-	if(use_DSO==1)
-		FDSOAppend(prefix)
+	String dname
+	Variable nlwave
+	nlwave=JMGeneralDatLoaderFunc2(fname,pname,".dat",index,prefix,suffixlist,1,"m","eV",0)
+	dname=prefix+num2istr(index)
+	if(g_use_DSO==1)
+		FDSOAppend(dname,index)
 	endif
 End
 
