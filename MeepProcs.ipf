@@ -33,7 +33,7 @@ Macro init_meep(pathname,prefix)
 	if(strlen(prefix)==0)
 		prefix="res0"
 	endif	
-	JMGTDLinit("data",prefix,"")
+	JMGTDLinit2(1,"data",prefix,"")
 
 	if (CmpStr(pathname, "_New Path_") == 0)		// user selected new path ?
 		NewPath/O meep			// this brings up dialog and creates or overwrites path
@@ -43,7 +43,9 @@ Macro init_meep(pathname,prefix)
 	String savDF = GetDataFolder(1)
 	SetDataFolder root:Packages:JMGTDL:
 //	SVAR g_path
+	String/G g_path,g_prefix
 	g_path=pathname
+	g_prefix=prefix
 	SetDataFolder savDF
 
 //	String wlist
