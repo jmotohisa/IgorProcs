@@ -32,6 +32,25 @@ Function/T JMGTDLinit(use_DSO,dsetnm)
 	return(dsetnm)
 End
 
+Function/T JMGTDLinit2(use_DSO,dsetnm,prefix,suffixlist)
+	Variable use_DSO
+	String dsetnm
+	String prefix,suffixlist
+	String/G g_JMGTD_wname
+	
+	Variable index
+	if(use_DSO==1)
+	// create data set
+		FDSOinit(dsetnm,prefix,suffixlist)
+		index=DSOCreate0(0,1)
+		dsetnm=dsetnm+num2istr(FDSO_getIndex()-1)
+		DSODisplayTable(dsetnm)
+	endif
+	NewDataFolder/O/S root:Packages:JMGTDL
+	return(dsetnm)
+End
+
+
 //! @param fname, pname,extName
 //! @return number of waves loaded
 Function JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,scalenum,xunit,yunit,fquiet)
