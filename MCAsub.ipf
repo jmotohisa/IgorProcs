@@ -1,4 +1,11 @@
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
+//	MCAsub.ipf
+//	for analysis of TCSPC data
+//	16/02/23 ver. 0.02 by J. Motohisa
+//
+//	revision history
+//		16/02/22	ver 0.01	extracted from loadMCAChnfile.ipf
+//		16/02/23	ver 0.02	code added from IgorExchange for fitting and deconvolution of IRF
 
 Macro ScaleChn(waveName,gain,range)
 	String waveName
@@ -276,3 +283,73 @@ Macro AppendFit2Results(waveName,index)
 		ModifyGraph rgb($wave2)=(0,0,65535)
 	endif
 End Macro
+
+///////////////////////////////////////////// 
+ // taken from http://www.igorexchange.com/node/4201
+
+Function MakeGraph()
+	// assumes that waves IRF and Decay_1 already exist in current dataFolder
+	string sDecayWave = "Decay_1"
+	string sIRFWave = "IRF"
+	// Reference these waves
+	wave wDecay = $sDecayWave
+	wave wIRF = $sIRFWave
+	// Make the plot and assign trace names
+	Display wIRF/TN=IRF, wDecay/TN=Decay
+	ModifyGraph mode=2, rgb(IRF)=(0,0,65280)
+	ModifyGraph log(left)=1, mirror(left)=1, minor(left)=1
+	ModifyGraph mirror=1, minor=1
+	// display and set cursors
+	ShowInfo 
+	WaveStats/Q wDecay
+	Cursor/A=1/H=2 A, Decay, V_maxloc
+	Cursor/A=1/H=2 B, Decay, 2500
+End
+ 
+Function TCSPC_Fit()
+	// assumes that waves IRF and Decay_1 already exist in current dataFolder
+	string sDecayWave = "Decay_1"
+	string sIRFWave = "IRF"
+	// Reference these waves
+	wave wDecay = $sDecayWave
+	wave wIRF = $sIRFWave
+	// Make a normalised IRF wave
+	Duplicate/O wIRF, wIRF_N
+	variable vSum = sum(wIRF, -inf, inf)
+	wIRF_N[] /= vSum
+	// Make Fit-related waves
+	Duplicate/O wDecay,wWeight
+	wWeight[] = 1 / sqrt(wWeight[p]) // weighting is from shot noise - set to 1/stdev for each data point
+	Make/O/N=5 W_coef, W_sigma
+	Make/O/N=1 W_fitConstants // the x-axis offset
+	// run non-convolution curve fit first to effectively get a set of starting parameters
+	W_coef[0] = 0 // hold offset at zero
+ 
+//	This would be for a single exponentail fit:	
+//	CurveFit/H="100"/NTHR=0/L=(pcsr(B)-pcsr(A)+1) exp_XOffset, kwCWave=W_coef, wDecay[pcsr(A),pcsr(B)] /D /R /W=wWeight
+ 
+//	This is for a double exponential fit:
+	CurveFit/H="10000"/NTHR=0/L=(pcsr(B)-pcsr(A)+1) dblexp_XOffset, kwCWave=W_coef, wDecay[pcsr(A),pcsr(B)] /D /R /W=wWeight
+ 
+	string sFitDecay="fit_"+sDecayWave
+	wave wFit=$sFitDecay
+	ModifyGraph rgb($sFitDecay)=(0,65280,0)
+	Make/O/N=5 wFitParams
+	wFitParams[]=W_coef[p]
+	FuncFit/NTHR=0/L=(pcsr(B)-pcsr(A)+1) TCSPC_Convolution,wFitParams, wDecay[pcsr(A),pcsr(B)] /D /R /W=wWeight
+End
+ 
+Function TCSPC_Convolution(wFitParams,yw,xw) : FitFunc
+	Wave wFitParams,yw,xw
+	wave wIRF_N
+	// make exponential decay wave
+	Make/O/N=(pcsr(B) - pcsr(A) + 1) wExpDecay
+	wExpDecay[] = wFitParams[0] + wFitParams[1] * exp(- x / wFitParams[2])
+// 	This is for 2-exponential fit only:
+	wExpDecay[] += wFitParams[3] * exp(- x / wFitParams[4])
+ 
+	//Convolve with IRF
+	Convolve wIRF_N, wExpDecay
+	//assign the result (note: offset due to cursor fit range)
+	yw[] = wExpDecay[p + pcsr(A)]
+End
