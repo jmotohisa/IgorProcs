@@ -7,6 +7,8 @@
 //		16/02/22	ver 0.01	extracted from loadMCAChnfile.ipf
 //		16/02/23	ver 0.02	code added from IgorExchange for fitting and deconvolution of IRF
 
+// note: more pricely, data starts with <<DATA>> and ended with <<END>>
+
 Macro ScaleChn(waveName,gain,range)
 	String waveName
 	Variable/D gain=10,range = 50
