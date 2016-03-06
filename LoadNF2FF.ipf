@@ -1,5 +1,5 @@
 #pragma rtGlobals=1		// Use modern global access method.
-#include "JMGeneralTextDataLoad"
+#include "JMGeneralTextDataLoad2"
 #include <New Polar Graphs>
 
 // LoadNF2FF.ipf
@@ -11,8 +11,10 @@
 //		12/02/01	ver 0.1a	a separate macro
 //		12/12/05	ver 0.1b	part for 3D calculation added
 //		13/03/20	ver 0.1c	"quiet" option added due to change in JMGeneralTextDataLoad
+//		16/03/06	ver 0.2a	to work with DSO
 
-Function initNF2FFLoad()
+Function initNF2FFLoad(withPolar)
+	Variable withPolar
 	String/g g_nf2ffcylWN="nf2ffcylWName"
 	String/g g_nf2ffcylNLWN="nf2ffcylWNameNL"
 	String/g g_nf2ffcylPart="nf2ffcylPartWName"
@@ -24,34 +26,23 @@ Function initNF2FFLoad()
 	String wlist
 	Variable nwv
 
-	wlist=";wavelength;theta;phi;Etheta_re;Etheta_im;Ephi_re;Ephi_im;rcs"
-	JMGeneralDatLoaderInit(g_nf2ffcylWN,wlist)
-
-	wlist=";wavelength;theta;phi;Etheta_re;Etheta_im;Ephi_re;Ephi_im;rcs"
-	JMGeneralDatLoaderInit(g_nf2ffWN,wlist)
+	if(withPolar==1)
+		g_nf2ffWN=";wavelength;theta;phi;Etheta_re;Etheta_im;Ephi_re;Ephi_im;rcs;rcs_x;rcs_y;rcs_z"
+		g_nf2ffcylWN=";wavelength;theta;phi;Etheta_re;Etheta_im;Ephi_re;Ephi_im;rcs;rcs_x;rcs_y;rcs_z"
+	else
+		g_nf2ffWN=";wavelength;theta;phi;Etheta_re;Etheta_im;Ephi_re;Ephi_im;rcs"
+		g_nf2ffcylWN=";wavelength;theta;phi;Etheta_re;Etheta_im;Ephi_re;Ephi_im;rcs"
+	endif
 	
-	wlist=";theta;rcsall;rcs0;rcs1;rcs2;rcs02"
-	JMGeneralDatLoaderInit(g_nf2ffcylPart,wlist)
-
-	wlist=";theta;phi;rcsall;rcs0;rcs1;rcs2;rcs02"
-	JMGeneralDatLoaderInit(g_nf2ffPart,wlist)
-	
-	wlist=";Nthre;Nthim;Lphre;Lphim;Nphre;Nphim;Lthre;Lthim"
-	JMGeneralDatLoaderInit(g_nf2ffLNWN,wlist)
-
-//	wlist=";;s11;pol;s33;s34"
-//	JMGeneralDatLoaderInit(g_wnloadSphereAngle,wlist)
-
-//	wlist=";radius;wavelength;n_real;n_imag;qscpar;qscper;qexpar;qexper;qabspar;qabsper"
-//	JMGeneralDatLoaderInit(g_wnloadCylinder,wlist)
-
-//	wlist=";;t11;pol;t33;t34"
-//	JMGeneralDatLoaderInit(g_wnloadCylinderAngle,wlist)
+//	wlist=";theta;rcsall;rcs0;rcs1;rcs2;rcs02"
+//	wlist=";theta;phi;rcsall;rcs0;rcs1;rcs2;rcs02"
+//	wlist=";Nthre;Nthim;Lphre;Lphim;Nphre;Nphim;Lthre;Lthim"
+	JMGTDLinit(1,"data")
 End
 
-Macro LoadNf2ffCylinder(fname,pname,suffix,dispTable,dispGraph,col,fquiet)
+Macro LoadNf2ffCylinder(fname,pname,index,dispTable,dispGraph,col,fquiet)
 	String fname,pname="home"
-	Variable suffix=g_datanum,dispTable=2,dispGraph=2,col=2,fquiet=2
+	Variable index,dispTable=2,dispGraph=2,col=2,fquiet=2
 	Prompt fname,"File Name"
 	Prompt pname,"Path Name"
 	Prompt dispTable, "Display Table ?",popup,"yes;no"
@@ -60,13 +51,17 @@ Macro LoadNf2ffCylinder(fname,pname,suffix,dispTable,dispGraph,col,fquiet)
 	Prompt fquiet,"quiet ?",popup,"yes;no"
 	PauseUpdate; Silent 1;
 	
-	JMGeneralDatLoaderFunc(fname,pname,g_nf2ffcylWN,suffix,col,dispTable,dispGraph,fquiet)
-	g_datanum=suffix+1
+	String extName=".dat",xunit="",yunit="",prefix="C"
+	String suffixlist=g_nf2ffcylWN
+	Variable scalenum=-1
+//	JMGeneralDatLoaderFunc(fname,pname,prefix,g_nf2ffcylWN,suffix,col,dispTable,dispGraph,fquiet)
+	JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,col,xunit,yunit,fquiet)
+//	g_datanum=suffix+1
 End
 
-Macro LoadNf2ff(fname,pname,suffix,dispTable,dispGraph,col,fquiet)
+Macro LoadNf2ff(fname,pname,index,dispTable,dispGraph,col,fquiet)
 	String fname,pname="home"
-	Variable suffix=g_datanum,dispTable=2,dispGraph=2,col=2,fquiet=2
+	Variable index,dispTable=2,dispGraph=2,col=2,fquiet=2
 	Prompt fname,"File Name"
 	Prompt pname,"Path Name"
 	Prompt dispTable, "Display Table ?",popup,"yes;no"
@@ -75,8 +70,12 @@ Macro LoadNf2ff(fname,pname,suffix,dispTable,dispGraph,col,fquiet)
 	Prompt fquiet,"quiet ?",popup,"yes;no"
 	PauseUpdate; Silent 1;
 	
-	JMGeneralDatLoaderFunc(fname,pname,g_nf2ffWN,suffix,col,dispTable,dispGraph,fquiet)
-	g_datanum=suffix+1
+	String extName=".dat",xunit="",yunit="",prefix="C"
+	String suffixlist=g_nf2ffWN
+	Variable scalenum=-1
+//	JMGeneralDatLoaderFunc(fname,pname,g_nf2ffWN,suffix,col,dispTable,dispGraph,fquiet)
+	JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,scalenum,xunit,yunit,fquiet)
+//	g_datanum=suffix+1
 End
 
 Macro LoadNF2FFpartCylinder(fname,pname,suffix,dispTable,dispGraph,col,fquiet)
@@ -165,20 +164,20 @@ Proc To2DimWave(orig0,suffix,ntheta)
 	Variable suffix,ntheta=91
 	PauseUpdate; Silent 1
 	
-	String orig=orig+"_"+num2str(suffix)
-	String wlen="wavelength_"+num2str(suffix)
-	Variable wlmin,wlmax,thetamin,thetamax,ny
-	if(WaveDims($orig)!=1)
-		return
-	endif
-	WaveStats/Q $wlen
-	wlmin=V_min
-	wlmax=V_max
-	WaveStats/Q $orig
-	thetamin=V_min
-	thetamax=V_max
-	ny=DimSize($orig,0)/ntheta
-	Redimension/N=(nthetaa,ny) $orig
-	SetScale/I x,thetamin,thetamax,"",$orig
-	SetScale/I y,wlmax,wlmin,"",$orig // note swapped
-End
+	String orig=orig0+"_"+num2str(suffix)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

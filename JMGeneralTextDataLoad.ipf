@@ -54,7 +54,7 @@ Function JMGTDLinit(dsetnm,prefix,suffixlist)
 	SetDataFolder savDF
 	
 	if(strlen(dsetnm)>0)
-		DSOinitFunc(dsetnm,prefix,suffixlist)
+		FDSOinit(dsetnm,prefix,suffixlist)
 	endif
 End
 

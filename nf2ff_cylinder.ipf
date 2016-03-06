@@ -1,6 +1,6 @@
 #pragma rtGlobals=1		// Use modern global access method.
 //#include "matrixOperations2"
-#include "JMGeneralTextDataLoad"
+#include "JMGeneralTextDataLoad2"
 
 // Since t-depdnence is exp(j*ometa*t) (not exp(-j*omega*t) ) in meep, 
 // "i" should be replaced with "-i" in nf2ff routine.
