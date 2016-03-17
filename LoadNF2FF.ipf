@@ -158,6 +158,53 @@ Proc FFIntensity():GraphStyle
 	Label bottom "angle \\F'Symbol'q\\F'Helvetica' (degree)"
 End
 
+Macro Wave2DtoPolarParametric(orig,dest) //,nszie)
+	String orig,dest
+//	Variable nsize=91
+	Prompt orig,"Original wave",popup,WaveList("*",";","DIMS:2")
+	Prompt dest,"Destination wave"
+//	Prompt nsize,"Destination wave size"
+	PauseUpdate; Silent 1
+	Wave2DtoPolarParametricFunc(orig,dest)
+End
+
+Function Wave2DtoPolarParametricFunc(orig,dest)
+	String orig,dest
+	
+	Variable i,j,xx,yy,zz,nth,nph,nth0,nph0,dPh,dTh,ph,th,i1,j1,i2,j2,i3,j3
+	If(strlen(dest)==0)
+		dest="P_"+orig
+	endif
+	nth0=DimSize($orig,0)
+	nph0=DimSize($orig,1)
+	dTh=DimDelta($orig,0)*pi/180
+	dPh=DimDelta($orig,1)*pi/180
+//	nth=nth0
+//	ny=ny0
+	nph=(nph0-1)*4+1
+	nth=(nth0-1)*2+1
+	Make/O/N=(nph,nth,3),$dest
+	Wave destwv=$dest,origwv=$orig
+	for(j=0;j<nth;j+=1)
+		th=j*dTh
+		j3=90-abs(90-j)
+		for(i=0;i<nph;i+=1)
+			ph=i*dPh
+			if(i>180)
+				i3=90-abs(270-i)
+			else
+				i3=90-abs(90-i)
+			endif
+			xx=origwv[j3][i3]*cos(ph)*sin(th)
+			yy=origwv[j3][i3]*sin(ph)*sin(th)
+			zz=origwv[j3][i3]*cos(th)
+			destwv[i][j][0]=xx
+			destwv[i][j][1]=yy
+			destwv[i][j][2]=zz
+		endfor
+	endfor
+End
+
 // assume orig
 Proc To2DimWave(orig0,suffix,ntheta)
 	String orig0="rcs"
@@ -165,19 +212,5 @@ Proc To2DimWave(orig0,suffix,ntheta)
 	PauseUpdate; Silent 1
 	
 	String orig=orig0+"_"+num2str(suffix)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+End
+//
