@@ -12,6 +12,7 @@
 //		12/12/05	ver 0.1b	part for 3D calculation added
 //		13/03/20	ver 0.1c	"quiet" option added due to change in JMGeneralTextDataLoad
 //		16/03/06	ver 0.2a	to work with DSO
+//		16/03/18	ver 0.2b	sum function to convert 2D wave and to integrate over (theta,phi) is added
 
 Function initNF2FFLoad(withPolar)
 	Variable withPolar
@@ -59,14 +60,15 @@ Macro LoadNf2ffCylinder(fname,pname,index,dispTable,dispGraph,col,fquiet)
 //	g_datanum=suffix+1
 End
 
-Macro LoadNf2ff(fname,pname,index,dispTable,dispGraph,col,fquiet)
+Macro LoadNf2ff(fname,pname,index,dispTable,dispGraph,col,f2d,fquiet)
 	String fname,pname="home"
-	Variable index,dispTable=2,dispGraph=2,col=2,fquiet=2
+	Variable index,dispTable=2,dispGraph=2,col=2,fquiet=2,f2d=0
 	Prompt fname,"File Name"
 	Prompt pname,"Path Name"
 	Prompt dispTable, "Display Table ?",popup,"yes;no"
 	Prompt dispGraph, "Display Graph ?",popup,"yes;no"
 	Prompt col,"x-axis",popup,";angle;"
+	Prompt f2d,"make 2D wave (num column)"
 	Prompt fquiet,"quiet ?",popup,"yes;no"
 	PauseUpdate; Silent 1;
 	
@@ -75,7 +77,39 @@ Macro LoadNf2ff(fname,pname,index,dispTable,dispGraph,col,fquiet)
 	Variable scalenum=-1
 //	JMGeneralDatLoaderFunc(fname,pname,g_nf2ffWN,suffix,col,dispTable,dispGraph,fquiet)
 	JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,scalenum,xunit,yunit,fquiet)
+	if(f2d>1)
+		To2DWaves(prefix+num2str(index),suffixlist,f2d)
+		if(fquiet==1)
+			print "Waves are converted to 2D waves."
+		endif
+	endif
 //	g_datanum=suffix+1
+End
+
+Function To2DWaves(prefix,suffixlist,numcol)
+	String prefix,suffixlist
+	Variable numcol
+	
+	if(numcol<=1)
+		return 0
+	endif
+	
+	Variable index,nx,n0
+	String suffix,wvname
+	n0=ItemsInlist(suffixlist)
+	index=0
+	do
+		suffix=StringFromList(index,suffixlist,";")
+		if(strlen(suffix)>0)
+			wvname=prefix+"_"+suffix
+			Wave wwv=$wvname
+			if(waveexists($wvname))
+				nx=DimSize(wwv,0)/numcol
+				Redimension/N=(nx,numcol) wwv
+			endif
+		endif
+		index+=1
+	while(index<n0)
 End
 
 Macro LoadNF2FFpartCylinder(fname,pname,suffix,dispTable,dispGraph,col,fquiet)
@@ -157,6 +191,69 @@ Proc FFIntensity():GraphStyle
 	Label left "Far-field intensity (arb. units)"
 	Label bottom "angle \\F'Symbol'q\\F'Helvetica' (degree)"
 End
+
+Function MakeComplexField(prefix)
+	String prefix
+	
+	Wave2Complex(prefix+"_Etheta")
+	Wave2Complex(prefix+"_Ephi")
+End
+
+Function/S Wave2Complex(prefix)
+	String prefix
+	String orig_re,orig_im,dest
+	orig_re=prefix+"_re"
+	orig_im=prefix+"_im"
+	dest=prefix
+	Duplicate/O  $orig_re,$dest
+	Redimension/C $dest
+	Wave/C wdest=$dest
+	Wave worig_re=$orig_re, worig_im=$orig_im
+	wdest=cmplx(worig_re,worig_im)
+	return(dest)
+End
+
+Function rcs2dIntegration(wvname,thetamax)
+	String wvname
+	Variable thetamax
+	
+	Variable xmin,xmax,ymin,ymax
+	xmin=0
+	xmax=thetamax
+	ymin=0
+	ymax=90
+	Variable/G globalXmin=xmin
+	Variable/G globalXmax=xmax
+	Variable/G globalY
+	Duplicate/O $wvname,my2DSpectralWave
+	return Integrate1d(userFunction2,ymin,ymax,1)*(pi*pi/(180*180))*4 // Romberg integration
+End
+
+Function AvrSrcPol(polaravr,polarx,polary,polarz)
+	String polaravr,polarx,polary,polarz
+	Wave wpolaravr=$polaravr
+	Wave wpolarx=$polarx
+	Wave wpolary=$polary
+	Wave wpolarz=$polarz
+	wpolaravr=(wpolarx+wpolary)/4+wpolarz/2
+End
+
+Function userFunction1(inX)
+	Variable inX
+	NVAR globalY=globalY
+	Wave my2DSpectralWave
+	return Interp2d(my2DSpectralWave,inX,globalY)*sin(inX*pi/180)
+End
+
+Function userFunction2(inY)
+	Variable inY
+	NVAR globalY=globalY
+	globalY=inY
+	NVAR globalXmin=globalXmin
+	NVAR globalXmax=globalXmax
+	return integrate1D(userFunction1,globalXmin,globalXmax,1) // Romberg integration
+End
+
 
 Macro Wave2DtoPolarParametric(orig,dest) //,nszie)
 	String orig,dest
