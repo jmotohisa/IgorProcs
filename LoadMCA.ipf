@@ -28,10 +28,11 @@ Macro MultiMCALoad(thePath,flag,len,timediv,wantToPrint)
 		thePath = "data"
 	endif
 	
-	DoWindow /F Graphplot							// make sure Graphplot is front window
+	DoWindow /F gGraphPlot							// make sure Graphplot is front window
 	if (V_flag == 0)								// Graphplot does not exist?
 		Make/N=2/D/O dummywave0
-		Graphplot()									// create it
+		FGraphPlot("V","counts")									// create it
+		DoWindow/C gGraphPlot
 	endif
 	
 	do

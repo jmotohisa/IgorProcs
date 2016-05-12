@@ -5,8 +5,9 @@
 //	09/07/19 ver. 0.1 by J. Motohisa
 //
 //	revision history
-//		09/07/19		ver 0.1	first version
-//		09/09/17		ver 0.11 "rename" operation is replaced by "duplicate" and "KillWaves"
+//		09/07/19		ver 0.1:	first version
+//		09/09/17		ver 0.11: "rename" operation is replaced by "duplicate" and "KillWaves"
+//		16/04/29        ver 0.12: arggument added for FGraphPlot
 
 // To Do: 
 
@@ -119,11 +120,12 @@ Macro MultiLoadGeneralTextData(thePath, suffix,wnprefix,dsetnm,fnamewv,flag,n_xc
 	Make/T/N=1/O $fnamewv
 	Edit $fnamewv
 	
-	DoWindow /F Graphplotxy							// make sure Graphplot is front window
+	DoWindow /F gGraphPlotxy							// make sure Graphplot is front window
 	if (V_flag == 0)								// Graphplot does not exist?
 		Make/N=2/D/O dummyxwave0
 		Make/N=2/D/O dummyywave0
-		Graphplotxy()									// create it
+		FGraphplotxy("xunit","yunit")									// create it
+		DoWindow/C gGraphPlotxy
 	endif
 
 // load general text data
