@@ -26,7 +26,8 @@ Macro KGLoad(name,file,path)
 	Prompt path,"path name"
 	PauseUpdate; Silent 1
 	
-	String extstr=".QDA",pathstr,name2
+	String extstr=".QDA",pathstr,name2,name3
+	String str
 	Variable ref,index,val,skip
 	Variable fileid,numcol
 //	print extstr
@@ -135,12 +136,26 @@ Macro KGLoad(name,file,path)
 				W_folder[g_index]=S_path
 			endif
 			W_file[g_index]=ParseFilePath(0, file, ":", 1, 0)
-			sprintf,W_header[g_index],"%s",JMKG_header[index]
+			sprintf str,"%s",JMKG_header[index]
+			W_header[g_index]=str
 			W_wname[g_index]="KG"+num2str(g_index)
+//			name3=strrpl(JMKG_header[index],"-","_")
 			if(strlen(name)==0)
+				if(cmpstr(name3,"E")==0)
+					name3=name3+name3
+				endif
 				sprintf name2,"%s",strrpl(JMKG_header[index],"-","_")
 			else
 				sprintf name2,"%s_%s",name,strrpl(JMKG_header[index],"-","_")
+			endif
+			if(cmpstr(name2,"E")==0)
+				name2="EE"
+			endif
+			if(cmpstr(name2,"I")==0)
+				name2="II"
+			endif
+			if(cmpstr(name2,"J")==0)
+				name2="JJ"
 			endif
 			Duplicate/O dummy0,$name2
 			Duplicate dummy0,$W_wname[g_index]
