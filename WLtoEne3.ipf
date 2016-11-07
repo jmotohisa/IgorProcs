@@ -16,14 +16,14 @@ Macro WLtoEneInDataSetDef(ind0,xwvnm_orig,xwvnm_dest)
 	Prompt xwvnm_orig,"original wavelength wave (suffix)"
 	Prompt xwvnm_dest,"destination energy wave (suffix)"
 	PauseUpdate; Silent 1
-	WLtoEneInDataSet(g_dsetnm,ind0,xwvnm_orig,xwvnm_dest)
+	WLtoEneInDataSet(g_DSOname,ind0,xwvnm_orig,xwvnm_dest)
 End Macro
 
 Function WLtoEneInDataSet(dsetnm,ind0,xwvnm_orig,xwvnm_dest)
 	String dsetnm
 	String xwvnm_orig,xwvnm_dest
 	Variable ind0
-	SVAR g_dsetnm
+	SVAR g_DSOname
 //	String dsetnm=g_dsetnm
 //	String xwvnm_orig="0",xwvnm_dest="eV"
 //	Prompt dsetnm,"Dataset name to plot"//,popup,WaveList("*",";","")
@@ -32,11 +32,11 @@ Function WLtoEneInDataSet(dsetnm,ind0,xwvnm_orig,xwvnm_dest)
 //	Prompt xwvnm_dest,"destination energy wave (suffix)"
 //	PauseUpdate;Silent 1
 
-	dsetnm=g_dsetnm
+//	dsetnm=g_dsetnm
 	
 	Variable numwave,index=0
 	String targetw,destw
-	g_dsetnm=dsetnm
+	g_DSOname=dsetnm
 	
 	dsetnm=dsetnm+num2istr(ind0)
 	Wave/T wv_dsetnm=$dsetnm
@@ -45,8 +45,8 @@ Function WLtoEneInDataSet(dsetnm,ind0,xwvnm_orig,xwvnm_dest)
 	do
 		targetw=wv_dsetnm(index)+"_"+xwvnm_orig
 		destw=wv_dsetnm(index)+"_"+xwvnm_dest
+		Duplicate/O $targetw,$destw
 		Wave wv_destw=$destw
-		Duplicate/O $targetw,wv_destw
 		wv_destw = 1239.8/wv_destw
 		index+=1
 	while(index<numwave)	
