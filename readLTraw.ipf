@@ -5,6 +5,7 @@
 // rename, split, and plot data
 
 // revision history
+//		17/01/02	ver 0.2:		ac analysis
 //		14/10/03-14/10/04	ver 0.1: first version
 
 #include "MatrixOperations2"
@@ -55,6 +56,8 @@ Function FLTReadRaw(fname,path,wvheader,xwv,ywv,fheader)
 	
 	String extstr,dum_header
 	Variable ref,found,offset,index
+	Variable plotname
+	String plotnamestr
 	extstr=".raw"
 	
 	if (strlen(fname)<=0)
@@ -86,39 +89,66 @@ Function FLTReadRaw(fname,path,wvheader,xwv,ywv,fheader)
 		if(GrepString(dum_header,"Binary:"))
 			found=1
 		endif
+		if(GrepString(dum_header,"Values:"))
+			found=-1
+		endif
 		index+=1
 	while(found==0)
 	Close ref
 	Redimension/N=(index) wwheader
+	printf "offset=%d, h%x\r",offset,offset
 	
 	Variable numpoints,numvars
+	plotnamestr=LTheaderToStr(2,wwheader)
 	numvars=LTheaderToNum(4,wwheader)
 	numpoints=LTheaderToNum(5,wwheader)
 	print "number of variables =", numvars,", number of points=", numpoints
+	plotname=fplotname(plotnamestr)
 	
 // read x data
 //	GBLoadWave/Q/N=wxwv/T={4,4}/B/U=(numpoints)/S=(offset)/W=1/P=$path fname
-	Make/O/N=(numpoints) $xwv
-	Wave wxwv=$xwv
-	Variable xdat0
-	index=0
-	Open /R/P=$path/T=(extstr) ref as fname	
-	do
-		FSetPos ref,offset+index*(8+(numvars-1)*4)
-		FBinRead/B=3/F=5 ref, xdat0
-		wxwv[index]=xdat0
-		index+=1
-	while(index<numpoints)
-	Close ref
+
+	if(found==1) // binary
+		Make/O/N=(numpoints) $xwv
+		Wave wxwv=$xwv
+		Variable xdat0
+		index=0
+		Open /R/P=$path/T=(extstr) ref as fname	
+
+		if(plotname==1) // transient alnalysis
+			do
+				FSetPos ref,offset+index*(8+(numvars-1)*4)
+				FBinRead/B=3/F=5 ref, xdat0
+				wxwv[index]=xdat0
+				index+=1
+			while(index<numpoints)
+			Close ref
 //	LTRename(xwv,0,wvheader)
 
-// read y data
-	GBLoadWave/Q/N=dummy/T={2,4}/B/U=(numvars+1)/S=(offset)/W=(numpoints)/P=$path fname
-	FWavesToMatrix("dummy","",ywv,0,numpoints,1)
-	Wave wdummy=$ywv
-	DeletePoints/M=0 0,2,wdummy
-	MatrixTranspose wdummy
-	
+	// read y data
+			GBLoadWave/Q/N=dummy/T={2,4}/B/U=(numvars+1)/S=(offset)/W=(numpoints)/P=$path fname
+			FWavesToMatrix("dummy","",ywv,0,numpoints,1)
+			Wave wdummy=$ywv
+			DeletePoints/M=0 0,2,wdummy
+			MatrixTranspose wdummy
+		elseif(plotname==2) // ac analysis
+			do
+				FSetPos ref,offset+index*(16+(numvars-1)*16)
+				FBinRead/B=3/F=5 ref, xdat0
+				wxwv[index]=xdat0
+				index+=1
+			while(index<numpoints)
+			Close ref
+	// read y data
+			GBLoadWave/Q/N=dummy/T={4,4}/B/U=(numvars*2)/S=(offset)/W=(numpoints)/P=$path fname
+			FWavesToMatrix("dummy","",ywv,0,numpoints,1)
+			Wave wdummy=$ywv
+//			DeletePoints/M=0 0,2,wdummy
+			MatrixTranspose wdummy
+		
+		endif
+	endif
+	// ascii data is not compatible yet
 	return 0
 End
 
@@ -133,6 +163,19 @@ Function LTheaderToNum(index,wwheader)
 	num=strsearch(str0,":",0)
 	substr=str0[num+1,length]
 	return str2num(substr)
+End
+
+Function/S LTheaderToStr(index,wwheader)
+	Wave/T wwheader
+	Variable index
+	
+	Variable num,length
+	String str0,substr
+	str0=wwheader[index]
+	length=strlen(str0)
+	num=strsearch(str0,":",0)
+	substr=str0[num+1,length]
+	return substr
 End
 
 // Rename and append unit based on header
@@ -226,4 +269,16 @@ Function SplitData_x(orig,num_row,num_column)
 	endif
 	
 	Redimension/N=(num_row) $orig
+End
+
+function fplotname(plotnamestr)
+	String plotnamestr
+	
+	if(strsearch(plotnamestr,"transient analysis",0,2)>=0)
+		return(1)
+	endif
+		if(strsearch(plotnamestr,"ac analysis",0,2)>=0)
+		return(2)
+	endif
+	return(0)
 End
