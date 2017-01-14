@@ -1,28 +1,29 @@
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
+#include "wname"
+#include "MatrixOperations2"
 
 // readLTraw.ipf
 // read LTspice raw data
 // rename, split, and plot data
 
 // revision history
+//		17/01/14	ver 0.2.1: plot bode diagram
 //		17/01/02	ver 0.2:		ac analysis
 //		14/10/03-14/10/04	ver 0.1: first version
 
 #include "MatrixOperations2"
 
-Macro LTReadRaw(fname,path,wvheader,fheader)
-	String fname,path,wvheader="header"
+Macro LTReadRaw(fname,path,wvname,wvheader,fheader)
+	String fname,path,wvname,wvheader="header"
 	Variable fheader=1
 	Prompt fname,"file name"
 	Prompt path,"path name"
+	Prompt wvname,"wave name"
 	Prompt wvheader,"header wave name"
 	Prompt fheader,"print header ?",popup,"yes;no"
 	PauseUpdate; Silent 1
 	
-	String xwv,ywv
-	xwv="xdata"
-	ywv="ydata"
-	FLTReadRaw(fname,path,wvheader,xwv,ywv,fheader)
+	FLTReadRaw(fname,path,wvname,wvheader,fheader)
 End
 
 Macro LTDisplay0(xwv0,ywv0,wvheader,index,fsplit,num_row,num_column)
@@ -50,14 +51,15 @@ Macro LTDisplay0(xwv0,ywv0,wvheader,index,fsplit,num_row,num_column)
 	MatrixWavePlotFunc(ywv,1,1,xwv)
 End
 	
-Function FLTReadRaw(fname,path,wvheader,xwv,ywv,fheader)
-	String fname,path,wvheader,xwv,ywv
+Function FLTReadRaw(fname,path,wvname,wvheader,fheader)
+	String fname,path,wvheader,wvname
 	Variable fheader
 	
 	String extstr,dum_header
 	Variable ref,found,offset,index
 	Variable plotname
 	String plotnamestr
+	String xwv,ywv
 	extstr=".raw"
 	
 	if (strlen(fname)<=0)
@@ -71,6 +73,11 @@ Function FLTReadRaw(fname,path,wvheader,xwv,ywv,fheader)
 		fname= S_fileName
 		Print fname
 	endif
+	if(strlen(wvname)<=0)
+		wvname=wname(fname)
+	endif
+	xwv=wvname+"_xdata"
+	ywv=wvname+"_ydata"
 	
 	// read hader
 	Make/O/T $wvheader
@@ -123,8 +130,8 @@ Function FLTReadRaw(fname,path,wvheader,xwv,ywv,fheader)
 				index+=1
 			while(index<numpoints)
 			Close ref
+			SetScale d 0,0,"s", wxwv
 //	LTRename(xwv,0,wvheader)
-
 	// read y data
 			GBLoadWave/Q/N=dummy/T={2,4}/B/U=(numvars+1)/S=(offset)/W=(numpoints)/P=$path fname
 			FWavesToMatrix("dummy","",ywv,0,numpoints,1)
@@ -139,13 +146,18 @@ Function FLTReadRaw(fname,path,wvheader,xwv,ywv,fheader)
 				index+=1
 			while(index<numpoints)
 			Close ref
+			SetScale d 0,0,"Hz", wxwv
 	// read y data
-			GBLoadWave/Q/N=dummy/T={4,4}/B/U=(numvars*2)/S=(offset)/W=(numpoints)/P=$path fname
+			GBLoadWave/Q/N=dummy/T={4,4}/B/U=((numvars)*2)/S=(offset)/W=(numpoints)/P=$path fname
 			FWavesToMatrix("dummy","",ywv,0,numpoints,1)
 			Wave wdummy=$ywv
 //			DeletePoints/M=0 0,2,wdummy
 			MatrixTranspose wdummy
-		
+		elseif (plotname==3) // operating point
+			GBLoadWave/Q/N=dummy/T={2,4}/B/U=(numvars+1)/S=(offset)/W=(numpoints)/P=$path fname
+			ywv=StringFromList(0,S_WaveNames)
+			Wave wdummy=$ywv
+			print wdummy
 		endif
 	endif
 	// ascii data is not compatible yet
@@ -199,6 +211,9 @@ Function/S LTRename(orig,index,wvheader)
 	if(stringmatch(dest,"time"))
 		dest="time0"
 	endif
+	if(stringmatch(dest,"freqency"))
+		dest="freq0"
+	endif
 	Make/O/N=(n) $dest
 	Wave wdest=$dest
 	if(index==0)
@@ -215,15 +230,15 @@ Function/S UnitToUnit(unit)
 	String unit
 	String unit0
 	if(stringmatch(unit,"time"))
-		unit0="sec"
+		unit0="s"
+	elseif(stringmatch(unit,"voltage"))
+		unit0="V"
+	elseif(stringmatch(unit,"device_current"))
+			unit0="A"
+	elseif(stringmatch(unit,"frequency"))
+						unit0="Hz"
 	else
-		if(stringmatch(unit,"voltage"))
-			unit0="V"
-		else
-			if(stringmatch(unit,"device_current"))
-				unit0="A"
-			endif
-		endif
+		unit0=""
 	endif
 	return(unit0)
 End
@@ -277,8 +292,42 @@ function fplotname(plotnamestr)
 	if(strsearch(plotnamestr,"transient analysis",0,2)>=0)
 		return(1)
 	endif
-		if(strsearch(plotnamestr,"ac analysis",0,2)>=0)
+	if(strsearch(plotnamestr,"ac analysis",0,2)>=0)
 		return(2)
 	endif
+	if(strsearch(plotnamestr,"Operating Point",0,2)>=0)
+		return(3)
+	endif
 	return(0)
+End
+
+Function MakeGainPhase(wvorig,index,wvgain,wvphase,wvfreq)
+	String wvorig,wvgain,wvphase,wvfreq
+	Variable index
+	
+	Duplicate/O $wvfreq $wvgain,$wvphase
+	Wave wwvorig=$wvorig
+	Wave wwvfreq=$wvfreq
+	Wave wwvgain=$wvgain
+	Wave wwvphase=$wvphase
+	SetScale d 0,0,"dB", wwvgain
+	SetScale d 0,0,"deg", wwvphase
+	wwvgain=10*log(wwvorig[p][index*2]^2+wwvorig[p][index*2+1]^2)
+	wwvphase=atan2(wwvorig[p][index*2+1],wwvorig[p][index*2])/pi*180
+	Display wwvgain vs wwvfreq
+	AppendToGraph/L=left2 wwvphase vs wwvfreq
+	ModifyGraph gfSize=18
+//	ModifyGraph lStyle($wvgain)=2,lStyle($wvphase)=2
+	ModifyGraph rgb($wvgain)=(0,0,0),rgb($wvgain)=(0,0,0)
+	ModifyGraph log(bottom)=1
+	ModifyGraph mirror=1
+	ModifyGraph lblPos(left)=85,lblPos(left2)=83
+	ModifyGraph freePos(left2)=0
+	ModifyGraph axisEnab(left)={0,0.7}
+	ModifyGraph axisEnab(left2)={0.75,1}
+	ModifyGraph manTick(left2)={0,90,0,0},manMinor(left2)={0,50}
+	Label left "Gain (\\U)"
+	Label bottom "Frequency (\\U)"
+	Label left2 "phase (\\U)"
+	SetAxis left2 -180,180
 End
