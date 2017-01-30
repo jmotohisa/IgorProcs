@@ -3,7 +3,7 @@
 // LoadParaAnalyser.ipf
 // by J. Motohisa
 
-// 2017/01/16 ver 0.01: first version @delft
+// 2017/01/16 ver 0.01: first version
 
 #include "wname"
 #include "GraphPlot"
@@ -12,13 +12,15 @@
 
 Macro LoadParaAnalyzer(fname,path,wvname)
 	String fname,path,wvname
+	Variable nmflag=1
 	PauseUpdate; silent 1
 	
 	FLoadParaAnalyzer(fname,path,wvname)
 End
 
-Function FLoadParaAnalyzer(fname,path,wvname)
+Function FLoadParaAnalyzer(fname,path,wvname,nmflag)
 	String fname,path,wvname
+	Variable nmflag
 
 	String extstr,dum_header,DataNames, units,dim1str,dim2str,str,wdummy,wdummy2
 	Variable ref,found,offset,index
@@ -55,6 +57,7 @@ Function FLoadParaAnalyzer(fname,path,wvname)
 			endif
 		elseif(GrepString(dum_header,"DataName"))
 			DataNames=TrimString(dum_header,"DataName")
+			print "DataName =", DataNames
 		elseif(GrepString(dum_header,"DataValue"))
 			found=1
 		elseif(strsearch(StringFromList(0,dum_header,","),"AnalysisSetup",0,2)>=0)
@@ -86,7 +89,11 @@ Function FLoadParaAnalyzer(fname,path,wvname)
 		Wave wvdummy=$wdummy
 		SetScale/I x start,stop,StringFromList(0,units,","), wvdummy
 		SetScale d 0,0,StringFromList(index,units,","), wvdummy
-		wdummy2=wvname+"_"+StringFromList(index,DataNames,",")
+		if(nmflag==1)
+			wdummy2=wvname+"_"+StringFromList(index,DataNames,",")
+		else
+			wdummy2=wvname+"_"+num2str(index)
+		endif			
 		Duplicate/O wvdummy,$wdummy2
 		index+=1
 	while(1)
@@ -98,19 +105,22 @@ Function/s TrimString(str_orig,str)
 	return(ReplaceString(" ",RemoveEnding(RemoveFromList(str,str_orig,","),"\r"),""))
 End
 
-Macro MultiParaAnalyzerLoad(thePath,which,dsetnm)
+Macro MultiParaAnalyzerLoad(thePath,which,dsetnm,nmflag)
 	String thePath="_New Path_",which="W",dsetnm="data"
+	Variable nmflag
 	Prompt thePath, "Name of path containing text files", popup PathList("*", ";", "")+"_New Path_"
 	Prompt which,"wave prefix"
 	Prompt dsetnm, "prefix for dataset name"
+	Prompt nmflag,"suffix naing scheme",popup,"numeric;dataname"
 	PauseUpdate;Silent 1
 
 	Variable/G g_DSOindex
 	FMultiParaAnalyzerLoad(thePath, which,dsetnm)
 End
 
-Function FMultiParaAnalyzerLoad(thePath, which,dsetnm)
+Function FMultiParaAnalyzerLoad(thePath, which,dsetnm,nmflag)
 	String thePath,which,dsetnm
+	Variable nmflag
 
 	String fileName,ftype
 	Variable fileIndex=0, gotFile
@@ -154,7 +164,7 @@ Function FMultiParaAnalyzerLoad(thePath, which,dsetnm)
 			name=which+num2istr(fileIndex)
 			print fileName,":",name
 //			FSPEload2(name,fileName,thePath,expnml,nmschm,which)
-			FLoadParaAnalyzer(filename,thePath,which+num2str(filenum))
+			FLoadParaAnalyzer(filename,thePath,which+num2str(filenum),nmflag)
 //			Wave dummy1
 			Duplicate/O dummywave1,dummywave0
 //			Textbox/C/N=tb_file/F=0/A=MT/X=-30/Y=5 "File: "+fileName
