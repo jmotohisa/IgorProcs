@@ -45,6 +45,21 @@ Function/S Loadsqw_1Dsub1(fileName,pathName,bwname,index,suffix,datpos,xscale,xu
 	JMGeneralDatLoaderFunc2(fileName,pathName,extName,index,bwname,suffixlist,scalenum,xunit,yunit,fquiet)
 End
 
+Function load_sqw_emsapprox(fname,pname,prefix,index)
+	String fname,pname,prefix
+	Variable index
+	
+	NVAR g_use_DSO
+	String suffixlist=";well_width;Ee1;E_hh1;E_e1hh1;eh_overlap"
+	String dname
+	Variable nlwave
+	nlwave=JMGeneralDatLoaderFunc2(fname,pname,".dat",index,prefix,suffixlist,1,"m","eV",0)
+	dname=prefix+num2istr(index)
+	if(g_use_DSO==1)
+		FDSOAppend(dname,index)
+	endif
+End
+
 Function load_pc1d(fname,pname,prefix,index)
 	String fname,pname,prefix
 	Variable index
