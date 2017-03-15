@@ -250,3 +250,16 @@ Macro SQW_GaAs_AlGaAs(wv,xAl,temp,dec,ems,emh)
 	Display $wv
 	Append/R $wv_e,$wv_hh
 End
+
+Function Func_asqw(ene,lw,v1,v3,mw,mb1,mb3)
+	Variable ene,lw,v1,v3,mw,mb1,mb3
+	Variable alph1,beta1,beta3,aa,bb,tankl
+	NVAR g_MEL,g_HBAR,g_EC
+	alph1 = sqrt(2.*g_MEL*mw*g_EC * ene)/g_HBAR
+	beta1 = sqrt(2.*g_MEL*mb1*g_EC*(v1-ene))/g_HBAR
+	beta3 = sqrt(2.*g_MEL*mb3*g_EC*(v3-ene))/g_HBAR
+	aa=alph1*mb1/(beta1*mw)
+	bb=alph1*mb3/(beta3*mw)
+	tanKL=tan(lw*alph1)
+	return((aa+bb)*cos(lw*alph1)+(1-aa*bb)*sin(lw*alph1))
+End

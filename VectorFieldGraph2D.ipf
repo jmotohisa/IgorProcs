@@ -3,11 +3,12 @@
 // VectorFieldGraph2D.ipf
 // based on example "Arrow Plot.pxp"
 //
-//	10/07/22 ver. 0.01a by J. Motohisa
+//	10/07/22 ver. 0.02a by J. Motohisa
 //
 //	revision history
 //		10/07/22 ver 0.01a: first version
 //		11/04/08 ver 0.01b: minor bug fixed
+//		17/03/07 ver 0.02a: window reuse with
 
 Macro XYWavesToVect(xwvnm,ywvnm,bname,scale)
 	String xwvnm,ywvnm,bname
@@ -36,8 +37,8 @@ Macro XYWavesToVect(xwvnm,ywvnm,bname,scale)
 	$wa[][2]= 1+2*sqrt($wa[P][0])
 End
 
-Macro ShowVectorFieldGraphXY(xwvnm,ywvnm,bname,scale)
-	String xwvnm,ywvnm,bname
+Macro ShowVectorFieldGraphXY(xwvnm,ywvnm,bname,scale,grname)
+	String xwvnm,ywvnm,bname,grname
 	Variable scale=1
 	PauseUpdate;Silent 1
 	
@@ -47,7 +48,15 @@ Macro ShowVectorFieldGraphXY(xwvnm,ywvnm,bname,scale)
 	String cmd
 
 	XYWavesToVect(xwvnm,ywvnm,bname,scale)
-	Display /W=(27,103,563,525) $wy vs $wx
+	if(strlen(WinList(grname,";",""))==0)
+		Display /W=(27,103,563,525) $wy vs $wx
+		if(strlen(grname)!=0)
+			DoWindow/C $grname
+		Endif
+	else
+		DoWindow/F $grname
+	endif
+
 //	DoWindow/C ArrowMarkerMethodGraph
 	ModifyGraph mode=3,marker=19,msize=1		// default marker used when arrow too small
 	ModifyGraph rgb=(0,0,0)
