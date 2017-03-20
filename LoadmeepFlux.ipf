@@ -157,7 +157,12 @@ Function FLoadMeepFluxRefl(pathname,fname,bname,withloss,wanttodisp,freqconv,squ
 
 	index=0
 	do
-		wtwname[][index]/=-wrwname[p][index]
+//		wtwname[][index]/=-wrwname[p][index]
+	if(index==0)
+		wtwname[][index]/=wrwname[p][0]
+	else
+		wtwname[][index]/=-wrwname[p][0]
+	endif
 
 //		rwname="reference_"+num2str(index)
 //		twname="target_"+num2str(index)
