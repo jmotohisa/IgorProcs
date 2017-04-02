@@ -1,6 +1,7 @@
 #pragma rtGlobals=1		// Use modern global access method.
 #include "ExecuteUnixShellCommand"
 //#include <HDF5 Browser>
+#include "strrpl"
 
 // h5procs.ips by J. Motohisa
 // collection of procedures for H5 files
@@ -117,4 +118,39 @@ Function h5ls(pathname)
 		fileIndex += 1
 	while (gotFile)									// until TextFile runs out of files
 
+End
+
+Function FJMH5open(fname,pname,wvname,dsname)
+	String fname,pname,wvname,dsname
+	
+	Variable FileID
+	if (strlen(fname)<=0)
+		if(strlen(pname)<=0)
+			HDF5OpenFile/I/R fileID as fname
+			fname= S_fileName
+			HDF5CloseFile fileID
+			fname=S_path+fname
+			print fname
+		else
+			HDF5OpenFile/I/R/P=pname fileID as fname
+			HDF5CloseFile fileID
+			fname=S_path+fname
+			HDF5OpenFile/R/P=$pname  fileID as fname
+		endif
+	endif
+
+	if(strlen(pname)<=0)
+		HDF5OpenFile/R fileID as fname
+	else
+		HDF5OpenFile/R/P=pname fileID as fname
+	endif
+
+	HDF5LoadData/N=dummy/O fileID,dsname
+	HDF5CloseFile fileID
+		
+	if(strlen(wvname)<=0)
+		wvname=strrpl(dsname,".","_")
+	endif
+	Duplicate/O dummy,$wvname
+	
 End
