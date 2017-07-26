@@ -7,6 +7,7 @@
 // rename, split, and plot data
 
 // revision history
+//		17/07/25	ver 0.2.2: enable loading DC transfer analysis
 //		17/01/14	ver 0.2.1: plot bode diagram
 //		17/01/02	ver 0.2:		ac analysis
 //		14/10/03-14/10/04	ver 0.1: first version
@@ -158,6 +159,21 @@ Function FLTReadRaw(fname,path,wvname,wvheader,fheader)
 			ywv=StringFromList(0,S_WaveNames)
 			Wave wdummy=$ywv
 			print wdummy
+		elseif (plotname==0)  // DC transfere characteristics
+			do
+				FSetPos ref,offset+index*(8+(numvars-1)*4)
+				FBinRead/B=3/F=5 ref, xdat0
+				wxwv[index]=xdat0
+				index+=1
+			while(index<numpoints)
+			Close ref
+			SetScale d 0,0,"V", wxwv
+			GBLoadWave/Q/N=dummy/T={2,4}/B/U=(numvars+1)/S=(offset)/W=(numpoints)/P=$path fname
+			FWavesToMatrix("dummy","",ywv,0,numpoints,1)
+			Wave wdummy=$ywv
+//			DeletePoints/M=0 0,2,wdummy
+			MatrixTranspose wdummy
+			DeletePoints/M=1 0,1,wdummy
 		endif
 	endif
 	// ascii data is not compatible yet

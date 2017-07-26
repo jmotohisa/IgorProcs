@@ -1,5 +1,7 @@
 #pragma rtGlobals=1		// Use modern global access method.
 #include "areaXYcursor"
+#include "FindLevelXY"
+#include "MatrixOperations2"
 
 // collection of macro for LED analysis
 // by J. Motohisa
@@ -165,4 +167,10 @@ Macro AppendFit_VI(wvname,I0,nval,rs,appendf)
 		ModifyGraph rgb($wvname_fit2_v)=(0,0,0)
 	endif
 End
+
+Function FindIntensityAtCurrent(iwvname,lwvname,levelToFind)
+	String iwvname,lwvname
+	Variable levelToFind
 	
+	return(FindLevelXY(iwvname,lwvname,levelToFind))
+End

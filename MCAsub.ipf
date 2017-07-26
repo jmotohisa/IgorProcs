@@ -6,10 +6,11 @@
 //	revision history
 //		16/02/22	ver 0.01	extracted from loadMCAChnfile.ipf
 //		16/02/23	ver 0.02	code added from IgorExchange for fitting and deconvolution of IRF
+//		17/07/25	ver 0.03	obsolete macros are put into procedures
 
 // note: more pricely, data starts with <<DATA>> and ended with <<END>>
 
-Macro ScaleChn(waveName,gain,range)
+Proc ScaleChn(waveName,gain,range)
 	String waveName
 	Variable/D gain=10,range = 50
 	Prompt waveName,"waveName",popup,WaveList("chn*", ";", "")
@@ -25,7 +26,7 @@ Macro ScaleChn(waveName,gain,range)
 	SetScale /P x,0,dt,"sec",$waveName
 End Macro
 
-Macro DisplayChn(waveName)
+Proc DisplayChn(waveName)
 	String waveName
 	Prompt waveName,"waveName",popup,WaveList("chn*", ";", "")
 	
@@ -34,7 +35,7 @@ Macro DisplayChn(waveName)
 	ModifyGraph log(left)=1
 End Macro
 
-Macro DisplayChnAll()
+Proc DisplayChnAll()
 	Silent 1; PauseUpDate
 	variable index=0
 	String chnlist = WaveList("chn*",";","")
@@ -49,7 +50,7 @@ Macro DisplayChnAll()
 	while(1)
 End Macro
 
-Macro ShiftXChn(waveName,x0,gain,range)
+Proc ShiftXChn(waveName,x0,gain,range)
 	String waveName
 	Variable/D x0=0,gain=10,range = 50
 	Prompt waveName,"waveName",popup,WaveList("chn*", ";", "")
@@ -67,7 +68,7 @@ Macro ShiftXChn(waveName,x0,gain,range)
 	SetScale /P x,x0,dt,"sec",$waveName
 End Macro
 
-Macro DupAndSmChn(waveName)
+Proc DupAndSmChn(waveName)
 	String waveName
 	Prompt waveName,"chn wave name to duplicate and smooth",popup,WaveList("chn*", ";", "")
 
@@ -289,10 +290,11 @@ End Macro
 ///////////////////////////////////////////// 
  // taken from http://www.igorexchange.com/node/4201
 
-Function MakeGraph()
+Function MakeGraph(sDecayWave,sIRFWave)
 	// assumes that waves IRF and Decay_1 already exist in current dataFolder
-	string sDecayWave = "Decay_1"
-	string sIRFWave = "IRF"
+	string sDecayWave
+	string sIRFWave
+	
 	// Reference these waves
 	wave wDecay = $sDecayWave
 	wave wIRF = $sIRFWave
@@ -308,10 +310,10 @@ Function MakeGraph()
 	Cursor/A=1/H=2 B, Decay, 2500
 End
  
-Function TCSPC_Fit()
+Function TCSPC_Fit(sDecayWave,sIRFWave)
 	// assumes that waves IRF and Decay_1 already exist in current dataFolder
-	string sDecayWave = "Decay_1"
-	string sIRFWave = "IRF"
+	string sDecayWave
+	string sIRFWave
 	// Reference these waves
 	wave wDecay = $sDecayWave
 	wave wIRF = $sIRFWave
@@ -322,8 +324,8 @@ Function TCSPC_Fit()
 	// Make Fit-related waves
 	Duplicate/O wDecay,wWeight
 	wWeight[] = 1 / sqrt(wWeight[p]) // weighting is from shot noise - set to 1/stdev for each data point
-	Make/O/N=5 W_coef, W_sigma
-	Make/O/N=1 W_fitConstants // the x-axis offset
+	Make/D/O/N=5 W_coef, W_sigma
+	Make/D/O/N=1 W_fitConstants // the x-axis offset
 	// run non-convolution curve fit first to effectively get a set of starting parameters
 	W_coef[0] = 0 // hold offset at zero
  
@@ -336,7 +338,7 @@ Function TCSPC_Fit()
 	string sFitDecay="fit_"+sDecayWave
 	wave wFit=$sFitDecay
 	ModifyGraph rgb($sFitDecay)=(0,65280,0)
-	Make/O/N=5 wFitParams
+	Make/D/O/N=5 wFitParams
 	wFitParams[]=W_coef[p]
 	FuncFit/NTHR=0/L=(pcsr(B)-pcsr(A)+1) TCSPC_Convolution,wFitParams, wDecay[pcsr(A),pcsr(B)] /D /R /W=wWeight
 End
@@ -345,7 +347,7 @@ Function TCSPC_Convolution(wFitParams,yw,xw) : FitFunc
 	Wave wFitParams,yw,xw
 	wave wIRF_N
 	// make exponential decay wave
-	Make/O/N=(pcsr(B) - pcsr(A) + 1) wExpDecay
+	Make/D/O/N=(pcsr(B) - pcsr(A) + 1) wExpDecay
 	wExpDecay[] = wFitParams[0] + wFitParams[1] * exp(- x / wFitParams[2])
 // 	This is for 2-exponential fit only:
 	wExpDecay[] += wFitParams[3] * exp(- x / wFitParams[4])
