@@ -112,8 +112,9 @@ Macro DoanalizeRs(wvname)
 End
 
 // step2: after put cursol on didv curve (red)
-Macro DoanalizeRs2(wvname)
+Macro DoanalizeRs2(wvname,temperature)
 	String wvname=g_wvname
+	Variable temperature=300
 	Prompt wvname,"IV wave name",popup,WaveList(g_prefix+"*",";","")
 	PauseUpdate; Silent 1
 	
@@ -130,7 +131,7 @@ Macro DoanalizeRs2(wvname)
 	
 		$g_namewave[nn-1]=wvname
 		$g_rswave[nn-1]=W_coef[1]
-		$g_nvalwave[nn-1]=W_coef[0]/0.026
+		$g_nvalwave[nn-1]=W_coef[0]/(0.026*temperature/300)
 		Redimension/N=(nn+1) $g_namewave,$g_rswave,$g_nvalwave
 		DoWindow/F $g_tablename
 		ModifyGraph lstyle($xwvname)=2,rgb($xwvname)=(0,0,0)
