@@ -58,6 +58,72 @@ Function FExportforFityk(bwvname,fev)
 	SetDataFolder saveDataFolder
 End
 
+Function FExportforFityk2(path,bwvname,suf,fev,ffold)
+	String path,bwvname,suf
+	Variable fev,ffold
+	
+	String wvname=bwvname+"_1"
+	String xwvname
+	String saveDataFolder=GetDataFolder(1)
+	NewDataFolder/O/S root:$(bwvname)
+	
+// x-axis data
+	if(fev==2)
+		xwvname=bwvname+"_eV2"
+		String xwv0=bwvname+"_0"
+		Duplicate/O root:$xwv0,$xwvname
+		Wave xwv=$xwvname
+		xwv=1239.8/xwv
+		SetScale d 0,0,"eV", xwv
+	else
+		xwvname=bwvname+"_0"
+		Duplicate/O root:$(xwvname),$xwvname
+		Wave xwv=$xwvname
+	endif
+
+// y-axis data
+	String wvlist,wvlist2
+	If(WaveDims(root:$(wvname))==2)
+		FmatrixAllToWavesDF(wvname)
+		wvlist=xwvname+";"+SortList(WaveList(wvname+"_*",";",""),";",16)
+		wvlist2=xwvname+","+SortList(WaveList(wvname+"_*",",",""),",",16)
+	else
+		Duplicate/O root:$wvname,$wvname
+		wvlist=xwvname+";"+wvname
+		wvlist2=xwvname+","+wvname
+	endif
+
+// sort	
+	String cmd
+	cmd="Sort "+xwvname+" "+wvlist2
+	Execute cmd
+
+// export
+	String fname=wvname+suf+".txt"
+	if(strlen(path)==0)
+		Save/G/M="\r\n"/B wvlist as fname 
+	else
+		PathInfo $path
+		if(V_flag==0) // invalid path
+			Save/G/M="\r\n"/B wvlist as fname
+		else // path exists, create directory under $path
+			String temppath=S_path+":"+bwvname
+			PathInfo $temppath
+			if(V_flag==0)
+				NewPath/C $temppath
+			else
+				NewPath $temppath
+			endif
+			Save/G/P=$temppath/M="\r\n"/B wvlist as fname
+			KillPath $temppath
+		endif
+	endif
+			
+// Save/G/M="\n"/W/P=home Wil79_eV2,Wil79_1_1,Wil79_1_2,Wil79_1_3 as "wil79/test.txt"
+
+	SetDataFolder saveDataFolder
+End
+
 // import gaussian peak parameters
 Function FImportFitykPeaksG(path,file,wvname,dfname,fShowTable)
 	String path,file,wvname,dfname
