@@ -118,12 +118,12 @@ Function/S FLoadLTraceIV(wvname,fileName,pathName,fpol,wantToDisp)
 			xmin=-V_max
 			xmax=-V_min
 			Sort/R xwv,xwv,ywv
-			ywv*=-1e-12
+			ywv*=-1e-9
 		else
 			xmin=V_min
 			xmax=V_max
 			Sort xwv,xwv,ywv
-			ywv*=1e-12
+			ywv*=1e-9
 		endif
 		SetScale/I x xmin,xmax,"V", ywv
 		SetScale d 0,0,"A", ywv
@@ -138,3 +138,74 @@ Function/S FLoadLTraceIV(wvname,fileName,pathName,fpol,wantToDisp)
 	
 	return wvname
 end
+
+Macro loadLTraceImageTxt(wvname,fileName,pathName,fpol,iextstr,wantToDisp,imgsize)
+	Variable wantToDisp,fpol,iextstr=1,imgsize=0.02
+	String wvname,filename,pathname
+	Prompt wvname,"wave name"
+	Prompt filename,"file name"
+	Prompt pathname,"path name"
+	Prompt fpol,"Transpose?",popup,"yes;no"
+	Prompt iextstr,"extension",popup,"iqt;ici"
+	Prompt wantToDisp,"display graph?",popup,"yes;no"
+	Prompt imgsize,"image size"
+	PauseUpdate ; Silent 1
+
+	FLoadLtraceImageTxt(wvname,fileName,pathName,fpol,iextstr,wantToDisp,imgsize)
+End
+
+Function FLoadLtraceImageTxt(wvname,fileName,pathName,fpol,iextstr,wantToDisp,imgsize)
+	Variable wantToDisp,fpol,iextstr,imgsize
+	String wvname,filename,pathname
+	
+	String extstr,units
+	Variable xdim,scale
+	
+	if(iextstr==2) // current image
+		extstr=".ici"
+		units="A"
+		scale=1e-9
+	else // AFM image
+		extstr=".iqt"
+		units="m"
+		scale=1e-9
+	endif
+	
+	if (strlen(fileName)<=0)
+		Open /D/R/P=$pathName/T=(extstr) ref
+		fileName= S_fileName
+	endif
+	print fileName
+	
+	if(strlen(wvname)==0)
+		wvname=wname(fileName)
+	endif
+
+	LoadWave/P=$pathname/J/M/D/A=dummywave/K=0/L={0,2,0,0,0} filename
+	String orig=StringFromList(0,S_wavenames,";")
+	Duplicate/O $orig,$wvname; KillWaves $orig
+	Wave wvdest=$wvname
+	xdim=DimSize(wvdest,1)
+	DeletePoints/M=1 xdim-1,1, wvdest
+	SetScale d 0,0,units, wvdest
+	wvdest*=scale
+	MatrixTranspose wvdest
+	
+	if(wantToDisp==1)
+		FShowImage(wvname,imgsize)
+		ModifyImage $wvname ctab= {*,*,YellowHot,0}
+		ColorScale/C/N=text0/F=0/A=MC image=$wvname
+	Endif
+	
+End
+
+Function FShowImage(wvname,imgsize)
+	String wvname
+	Variable imgsize
+	
+	Variable imgsize2
+	NewImage $wvname
+	imgsize2=imgsize*28.3465
+//	ModifyGraph width={perUnit,(imgsize2),bottom},height={perUnit,(imgsize2),left}
+//	Execute("JEG_AddColorLegend(wvname)")
+End

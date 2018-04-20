@@ -11,6 +11,13 @@ Macro LoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
 	String wvname,path,file
 	PauseUpdate;Silent 1
 	
+	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+End
+
+Function FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+	Variable sizex,sizey,imgsize
+	String wvname,path,file
+	
 	Variable ref
 	String extstr=".dat"
 	
@@ -25,21 +32,27 @@ Macro LoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
 		print wvname
 	endif
 
-	LoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
-	ShowIQVimage(wvname,imgsize)
+	FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+	FShowIQVimage(wvname,imgsize)
 End Macro
+
+Function FShowIQVimage(wvname,imgsize)
+	String wvname
+	Variable imgsize
+	
+	Variable imgsize2
+	Display; AppendImage $wvname
+	imgsize2=imgsize*28.3465
+	ModifyGraph width={perUnit,(imgsize2),bottom},height={perUnit,(imgsize2),left}
+	Execute("JEG_AddColorLegend(wvname)")
+End
 
 Macro ShowIQVimage(wvname,imgsize)
 	String wvname
 	Variable imgsize=0.02
 	Prompt wvname,"wave name",popup,WaveList("*",";","DIMS:2")
 	PauseUpdate;Silent 1
-	
-	Variable imgsize2
-	Display; AppendImage $wvname
-	imgsize2=imgsize*28.3465
-	ModifyGraph width={perUnit,(imgsize2),bottom},height={perUnit,(imgsize2),left}
-	JEG_AddColorLegend(wvname)
+	FShowIQVimage(wvname,imgsize)
 End
 
 Macro ResizeImages(imgsize)
