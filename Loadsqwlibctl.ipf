@@ -30,7 +30,7 @@ End
 // xscale_col: default to 1
 
 // load data from a single column in a file:
-Function/S Loadsqw_1Dsub1(fileName,pathName,bwname,index,suffix,datpos,xscale,xunit,yunit)
+Function/S FLoadsqw_1Dsub1(fileName,pathName,bwname,index,suffix,datpos,xscale,xunit,yunit)
 	String fileName,pathName,bwname,suffix,xunit,yunit
 	Variable index,datpos,xscale
 	
@@ -45,7 +45,22 @@ Function/S Loadsqw_1Dsub1(fileName,pathName,bwname,index,suffix,datpos,xscale,xu
 	JMGeneralDatLoaderFunc2(fileName,pathName,extName,index,bwname,suffixlist,scalenum,xunit,yunit,fquiet)
 End
 
-Function load_sqw_emsapprox(fname,pname,prefix,index)
+Function Fload_sqw_band4(fname,pname,prefix,index)
+	String fname,pname,prefix
+	Variable index
+	
+	NVAR g_use_DSO
+	String suffixlist=";x;Ec;Ehh;Elh;ESO"
+	String dname
+	Variable nlwave
+	nlwave=JMGeneralDatLoaderFunc2(fname,pname,".dat",index,prefix,suffixlist,1,"m","eV",0)
+	dname=prefix+num2istr(index)
+	if(g_use_DSO==1)
+		FDSOAppend(dname,index)
+	endif
+End
+
+Function Fload_sqw_emsapprox(fname,pname,prefix,index)
 	String fname,pname,prefix
 	Variable index
 	
@@ -60,7 +75,7 @@ Function load_sqw_emsapprox(fname,pname,prefix,index)
 	endif
 End
 
-Function load_pc1d(fname,pname,prefix,index)
+Function Fload_pc1d(fname,pname,prefix,index)
 	String fname,pname,prefix
 	Variable index
 	

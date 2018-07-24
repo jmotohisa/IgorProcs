@@ -3,6 +3,15 @@
 // GetColor function by H. Rodstein 
 //http://www.igorexchange.com/node/1535
 
+Function/S FJMColorize()
+	String gname
+	Variable numcolors
+	gname=WinName(0,1)
+	numcolors=ItemsInList(TraceNameList(gname,";",1))
+	JMColorize(gname,numcolors)
+	return gname
+End
+
 Function JMColorize(gname,numcolors)
 	String gname
 	Variable numcolors

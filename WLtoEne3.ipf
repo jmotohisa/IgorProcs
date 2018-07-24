@@ -52,3 +52,13 @@ Function WLtoEneInDataSet(dsetnm,ind0,xwvnm_orig,xwvnm_dest)
 	while(index<numwave)	
 End
 
+Function WLtoEneDS0(prefix)
+	String prefix
+	
+	String wv0=prefix+"_0"
+	String wveV=prefix+"_eV"
+	Wave wwv0=$wv0
+	Duplicate/O wwv0,$wveV
+	Wave wwveV=$wveV
+	wwveV=1239.8/wwveV
+End
