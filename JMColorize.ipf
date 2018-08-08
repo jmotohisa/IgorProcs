@@ -8,33 +8,50 @@ Function/S FJMColorize()
 	Variable numcolors
 	gname=WinName(0,1)
 	numcolors=ItemsInList(TraceNameList(gname,";",1))
-	JMColorize(gname,numcolors)
+	FJMColorize0(gname)
 	return gname
 End
 
-Function JMColorize(gname,numcolors)
+Function FJMColorize0(gname)
 	String gname
-	Variable numcolors
 	Prompt gname,"Graph Name",popup,WinList("*",";","WIN:1")
 	PauseUpdate; Silent 1
 	
 	String tnames,trname,cmd
 	Variable red,green,blue,index,numt
 	tnames=TraceNameList(gname,";", 1 )
+	FJMColorize000(tnames)
+End
+
+Function FJMColorize01(gname,matchstr)
+	String gname,matchstr
+
+	String tnames=GrepList(TraceNameList(gname,";",1),matchstr)
+	FJMColorize000(tnames)
+End
+
+// Colorize waves in wave list "tnames" 
+// All the waves in "tnames" is assumed to be in the graph
+Function FJMColorize000(tnames)
+	String tnames
+	
+	String trname,cmd
+	Variable red,green,blue,index,numt
+
 	numt=ItemsInList(tnames)
 	index=0
+
 	do
 		trname=StringFromList(index,tnames,";")
 		if(strlen(trname)==0)
 			break
 		endif
-		GetColor2(index, numcolors,red, green, blue)
-//		sprintf cmd,"ModifyGraph rgb(%s)=(%d,%d,%d)",tname,
+		GetColor(index,red, green, blue)
 		ModifyGraph rgb($trname)=(red,green,blue)
-		ModifyGraph lstyle($trname)=floor(index/numcolors)
+		ModifyGraph lstyle($trname)=floor(index/16)
 		index+=1
-//		ModifyGraph lstyle(zm0r000z000ref_theo)=2,
 	while(1)
+
 End
 
 Function GetColor(colorIndex, red, green, blue)
@@ -42,6 +59,7 @@ Function GetColor(colorIndex, red, green, blue)
 	Variable &red, &green, &blue				// Outputs
  
 //	colorIndex = mod(colorIndex, kNumVanBlariganWaves)			// Wrap around if necessary
+	colorIndex = mod(colorIndex, 16)			// Wrap around if necessary
 	switch(colorIndex)
 		case 0:		// Time wave
 			red = 0; green = 0; blue = 0;								// Black

@@ -2,6 +2,7 @@
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
 #include "MatrixOperations2"
+#include "JMColorize"
 
 // Procedures for fityk
 
@@ -10,13 +11,22 @@
 // data are sort according to x-wave (wavelength or photon energy)
 // $(wvname)_1 and $(bwvname)_eV2 are exported
 // fev: 1...x is wavelengh (nm), 2...x is photon energy (eV)
+
+Menu "Fityk"
+	"Export data...",ExportforFityk()
+	"Import peaks...",FitykImportAll()
+	"Display fit results...",DisplayCurves_Fitykall()
+	"Plot peaks...",DisplayPeaks_fityk()
+End
  
+// data exporter
 Function FExportforFityk(bwvname,fev)
 	String bwvname
 	Variable fev
 	
 	String wvname=bwvname+"_1"
 	String xwvname
+	String suffix="++"
 	String saveDataFolder=GetDataFolder(1)
 	NewDataFolder/O/S root:$(bwvname)
 	
@@ -52,7 +62,7 @@ Function FExportforFityk(bwvname,fev)
 	Execute cmd
 
 // export
-	Save/G/M="\r\n"/B wvlist as wvname+"++.txt"
+	Save/G/M="\r\n"/B wvlist as wvname+suffix+".txt"
 // Save/G/M="\n"/W/P=home Wil79_eV2,Wil79_1_1,Wil79_1_2,Wil79_1_3 as "wil79/test.txt"
 
 	SetDataFolder saveDataFolder
@@ -124,6 +134,7 @@ Function FExportforFityk2(path,bwvname,suf,fev,ffold)
 	SetDataFolder saveDataFolder
 End
 
+// Data importer
 // import gaussian peak parameters
 Function FImportFitykPeaksG(path,file,wvname,dfname,fShowTable)
 	String path,file,wvname,dfname
@@ -224,8 +235,8 @@ Function FImportFitykPeaksG(path,file,wvname,dfname,fShowTable)
 	return index
 End
 
-Macro ImportFitykPeaksG(path,file,wvname,dfname,fShowTable)
-	String path="home",file,wvname
+Proc ImportFitykPeaksG(path,file,wvname,dfname,fShowTable)
+	String path="home",file,wvname,dfname
 	Variable fShowTable=2
 	Prompt path,"path name"
 	Prompt file,"file name"
@@ -237,6 +248,8 @@ Macro ImportFitykPeaksG(path,file,wvname,dfname,fShowTable)
 	print "number of peaks read: ",FImportFitykPeaksG(path,file,wvname,dfname,fShowTable)
 End
 
+// Display data
+// display original and fitted curves
 Function DisplayCurves_Fityk(bname,dfname,xwv,orig,fdisp,axisindex)
 	String bname,xwv,orig,dfname
 	Variable fdisp // no;display;append;appendR;
@@ -302,11 +315,70 @@ Function DisplayCurves_Fityk(bname,dfname,xwv,orig,fdisp,axisindex)
 			ModifyGraph rgb($(bname+"_"+num2str(index)+"_1"))=(0,0,65535)
 			index+=1
 		while(index<ncurvs)
+// AppendToGraph $wvHght vs $wvCent
+// ModifyGraph mode($wvHght)=3
+// ModifyGraph rgb($wvHght)=(0,0,0)
 	endif
 	
 	SetDataFolder saveDataFolder
 End
 
+// Display peaks y vs x
+Proc DisplayPeaks_fityk(bname,start,stop)
+	String bname=g_bname
+	Variable start,stop
+	PauseUpdate; Silent 1
+	
+	g_bname=bname
+	FDisplayPeaks_fityk(bname,start,stop)
+End
+
+Function FDisplayPeaks_fityk(bname0,start,stop)
+	String bname0
+	Variable start,stop
+	
+	String bname,dfname
+	dfname=bname0
+	bname=dfname+"_1"
+	String saveDataFolder=GetDataFolder(1)
+	SetDataFolder root:$(dfname)
+	Variable index=start
+	Display
+	do
+		FDisplayPeaks_fityk0(bname,dfname,index,2)
+		index+=1
+	while(index<=stop)
+	ShowInfo
+	
+	SetDataFolder saveDataFolder
+End
+
+Function FDisplayPeaks_fityk0(bname,dfname,index,fdisp)
+	String bname,dfname
+	Variable fdisp // display;append;
+	Variable index
+	
+	String saveDataFolder=GetDataFolder(1)
+	SetDataFolder root:$(dfname)
+
+	String wvCent="P"+bname+"_"+num2str(index)+"_c"
+	String wvHght="P"+bname+"_"+num2str(index)+"_h"
+	
+	if(fdisp==1)
+		Display
+	Endif
+	
+	if(WaveExists($wvHght))
+		AppendToGraph $wvHght vs $wvCent
+		ModifyGraph mode($wvHght)=3
+		ModifyGraph rgb($wvHght)=(0,0,0)
+		ModifyGraph msize($wvHght)=8
+	Endif
+	
+	SetDataFolder saveDataFolder
+End
+
+// Calculate curves
 Function MakeCurves_Fityk(bname,xwv,dfname)
 	String bname,xwv,dfname
 	
@@ -351,17 +423,27 @@ Function/T MakeACurve_Fityk_Gaussian(bname,index,xwv)
 End
 
 // Procedures/Macros
-Proc ExportforFityk(bwvname,fev)
-	String bwvname
+Proc ExportforFityk(bname,fev)
+	String bname
 	Variable fev=2
-	Prompt bwvname,"base wave name to export"
+	Prompt bname,"base wave name to export"
 	Prompt fev,"x axis",popup,"wavelength;photon energy"
 	PauseUpdate; silent 1
 	
-	FExportforFityk(bwvname,fev)
+	String/G g_bname=bname
+	FExportforFityk(bname,fev)
 End
 
 // Fityk importer
+Proc FitykImportAll(bname)
+	String bname=g_bname
+	Prompt bname,"base wave name to import"
+	PauseUpdate; silent 1
+	
+	g_bname=bname
+	FFitykImportAll(bname)
+End
+
 Function FFitykImportAll(bname)
 	String bname
 //	PauseUpdate; Silent 1
@@ -372,7 +454,8 @@ Function FFitykImportAll(bname)
 	
 	GetFileFolderInfo/D/Q
 	ipath=S_path
-	NewPath/O fityk,S_path
+	print ipath
+	NewPath/O fityk,ipath
 	if(V_flag==0)
 		fileList = SortList(IndexedFile(fityk,-1,ftype),";",16)		// get name of next file in path
 		n=ItemsInList(fileList,";")
@@ -388,7 +471,20 @@ Function FFitykImportAll(bname)
 	endif
 End
 
-Macro DisplayCurves_FitykAll(bname,start,stop)
+// display fit results
+Proc DisplayCurves_FitykAll(bname,start,stop)
+	String bname=g_bname
+	Variable start,stop
+	Prompt bname,"base wave name"
+	Prompt start, "starting curve index"
+	Prompt stop, "ending curve index"
+	PauseUpdate; Silent 1
+
+	g_bname=bname
+	FDisplayCurves_FitykAll(bname,start,stop)
+End
+
+Function FDisplayCurves_FitykAll(bname,start,stop)
 	String bname
 	Variable start,stop
 	PauseUpdate; Silent 1
@@ -441,4 +537,371 @@ Function FmatrixAllToWavesDF(Mat)
 		FMatrixToWavesDF(Mat,index)
 		index += 1
 	while (Index < ncs)
+End
+
+Function FitykDupPeaks0(bname,index,idup)
+	string bname
+	Variable index,idup
+	
+	String saveDF=GetDataFolder(1)
+	SetDataFolder root:$bname
+	
+	String wvname,wvname0,wvorig
+	String wvType,wvCent,wvHght,wvArea,wvFWHM,wvPrms
+	wvname="P"+bname+"_"+num2str(index)
+	wvname0=wvname+"_"+num2str(idup)
+//	String wvPrm1,wvPrm2,wvPrm3
+	wvorig=wvname+"_T"; wvname0=wvorig+"_"+num2istr(idup);Duplicate/O $wvorig,$wvname0
+	wvorig=wvname+"_c"; wvname0=wvorig+"_"+num2istr(idup);Duplicate/O $wvorig,$wvname0
+	wvorig=wvname+"_h"; wvname0=wvorig+"_"+num2istr(idup);Duplicate/O $wvorig,$wvname0
+	wvorig=wvname+"_a"; wvname0=wvorig+"_"+num2istr(idup);Duplicate/O $wvorig,$wvname0
+	wvorig=wvname+"_w"; wvname0=wvorig+"_"+num2istr(idup);Duplicate/O $wvorig,$wvname0
+	wvorig=wvname+"_prms"; wvname0=wvorig+"_"+num2istr(idup);Duplicate/O $wvorig,$wvname0
+
+	SetDataFolder $saveDF
+End
+
+Function ArrangePeaks(bname,start,stop,imax)
+	String bname
+	Variable start,stop,imax
+	
+	// count number of peaks
+	String orig0,dest,wvname
+	Variable npeaks=0,n,index=start
+	do
+		orig0="P"+bname+"_"+num2istr(index)+"_c"
+		n=DimSize($orig0,0)
+		if(n>npeaks)
+			npeaks=n
+		endif
+		index+=1
+	while(index<=stop)
+
+	wvname="P"+bname+"_peaks"
+// initialize waves
+	String wvType,wvCent,wvHght,wvArea,wvFWHM,wvPrms
+	wvType=wvname+"_T"
+	wvCent=wvname+"_c"
+	wvHght=wvname+"_h"
+	wvArea = wvname+"_a"
+	wvFWHM = wvname+"_w"
+	wvPrms=wvname+"_prms"
+	Make/O/D/N=(stop+1,npeaks) $wvCent,$wvHght,$wvArea,$wvFWHM
+	Make/T/O/D/N=(stop+1,npeaks) $wvType,$wvPrms
+	Wave wwvCent=$wvcent
+	Wave wwvHght=$wvHght
+	Wave wwvArea=$wvArea
+	Wave wwvFWHM=$wvFWHM
+	Wave/T wwvType=$wvType
+	Wave/T wwvPrms=$wvPrms
+	wwvCent=NaN
+	wwvHght=NaN
+	wwvArea=NaN
+	wwvFWHM=NaN
+//	wwvType=""
+//	wwvPrms=""
+
+// substitution	
+	index=start
+	Variable npts
+	do
+		wvname="P"+bname+"_"+num2str(index)
+		wvType=wvname+"_T"
+		wvCent=wvname+"_c"
+		wvHght=wvname+"_h"
+		wvArea = wvname+"_a"
+		wvFWHM = wvname+"_w"
+		wvPrms=wvname+"_prms"
+		Wave wvCent0=$wvCent
+		Wave wvHght0=$wvHght
+		Wave wvArea0=$wvArea
+		Wave wvFWHM0=$wvFWHM
+		npts=DimSize(wvCent0,0)
+//		wwvCent[index][0,npts-1]=wvCent0[q*(DimSize(wvCent0,0)-1)/(DimSize(wwvCent,1)-1)]
+		wwvCent[index][0,npts-1]=wvCent0[q]
+		wwvHght[index][0,npts-1]=wvHght0[q]
+		wwvArea[index][0,npts-1]=wvArea0[q]
+		wwvFWHM[index][0,npts-1]=wvFWHM0[q]
+		index+=1
+	while(index<=stop)
+	
+// Display center
+	FDisplayPeaks0(wvCent)
+End
+
+Function FDisplayPeaks0(wvname)
+	String wvname
+	
+	Wave wwv=$wvname
+	Variable index,npeaks
+	npeaks=DimSize(wwv,1)
+	Display
+	Do
+		AppendToGraph wwv[][index]
+		index+=1
+	while(index<npeaks)
+	FJMColorize()
+	ModifyGraph mode=4,marker=19
+	
+End
+
+Function ArrangePeaksSub(orig,suffix,dest,index_orig,index_dest)
+	String orig,suffix,dest
+	Variable index_orig,index_dest
+	
+	String orig0=orig+"_"+suffix
+	String dest0=dest+"_"+suffix
+	Wave worig=$orig0
+	Wave wdest=$dest0
+	wdest[index_dest]=worig[index_orig]
+end
+
+Function FCheckPeakIndex(bname)
+	String bname
+	
+	String bname0
+	bname0=bname+"_1"
+	FCheckPaekIndex0(bname0,bname)
+	return 0
+End
+
+Function FCheckPaekIndex0(bname0,dfname)
+	String bname0,dfname
+	
+	String saveDataFolder = GetDataFolder(1)
+	SetDataFolder root:$(dfname)
+	
+	String bname="P"+bname0
+	String wvlist=WaveList(bname+"*"+"_c",";","")
+	
+	Variable index=0,nlist,imin,imax
+	nlist=ItemsInList(wvlist,";")
+//	Print wvlist
+	Print StringFromList(0,wvlist,";"),StringFromList(nlist-1,wvlist,";")
+	SetDataFolder saveDataFolder
+	return 0
+End
+
+
+// below can be replace by PickUpCsrPnt2
+Function FInitArrangePeaks0(bname0,dfname,bnm_dest)
+	String bname0,dfname,bnm_dest
+	
+	// dfindex: index of wave (data file)
+	// cindex : index of curve in a wave
+	// pindex : index of peak in a curve
+	
+	Variable/G g_aindex // peak index after arrangements
+	String/G g_bnm=bnm_dest // base name for peaks
+	String/G g_dfm=dfname // data set name
+	Variable/G g_ipeak=0
+	String bname="P"+bname0
+	Variable dfindex,cindex,pindex
+	
+	String saveDF=GetDataFolder(1)
+	SetDataFolder root:$dfname
+
+	String wvCent,wvHght,wvFWHM,wvArea,wvPind,wvCind,wvWind
+	wvCent=bnm_dest+"_c"
+	wvHght=bnm_dest+"_h"
+	wvFWHM=bnm_dest+"_w"
+	wvArea=bnm_dest+"_a"
+	wvPind=bnm_dest+"_iP"
+	wvCind=bnm_dest+"_iC"
+	wvWind=bnm_dest+"_iW"
+	Make/O/D/N=1 $wvCent,$wvHght,$wvFWHM,$wvArea
+	Make/O/N=1 $wvPind,$wvCind,$wvWind
+	Wave wwvCent=$wvCent
+	Wave wwvHght=$wvHght
+	Wave wwvFWHM=$wvFWHM
+	Wave wwvArea=$wvArea
+	Wave wwvPind=$wvPind
+	Wave wwvCind=$wvCind
+	Wave wwvWind=$wvWind
+	
+	String ywv=Csrwave(A)
+	String xwv=CsrXwave(A)
+	String prefix="Wil"
+	Variable sl1=strlen(prefix),sl=strlen(ywv)	
+	pindex=pcsr(A)
+	String s0=ywv[strlen(bname)+1,sl-1]
+	cindex=str2num(StringFromList(0,ywv[strlen(bname)+1,sl-1],"_"))
+	dfindex=str2num(dfname[sl1,sl-1])
+
+	String bname00=bname+"_"+num2str(cindex)
+	String wvFWHM0=bname00+"_w"
+	String wvArea0=bname00+"_a"
+	Wave wwvCent0=$xwv
+	Wave wwvHght0=$ywv
+	Wave wwvFWHM0=$wvFWHM0
+	Wave wwvArea0=$wvArea0
+	wwvHght[g_ipeak]=wwvHght0[pindex]
+	wwvCent[g_ipeak]=wwvCent0[pindex]
+	wwvFWHM[g_ipeak]=wwvFWHM0[pindex]
+	wwvArea[g_ipeak]=wwvArea0[pindex]
+	wwvPind[g_ipeak]=pindex
+	wwvCind[g_ipeak]=cindex
+	wwvWind[g_ipeak]=dfindex
+	g_ipeak+=1
+	
+	AppendToGraph wwvHght vs WwvCent
+	ModifyGraph mode($wvHght)=4,marker($wvHght)=19,msize($wvHght)=3,rgb($wvHght)=(65535,0,0)
+	
+	Edit wwvHght,wwvCent,wwvFWHM,wwvPind,wwvCind,wwvWind
+	SetDataFolder saveDF
+End
+
+Function FInitArrangePeaksAppend0(bname0,dfname,bnm_dest)
+	String bname0,dfname,bnm_dest
+
+	NVAR g_ipeak
+
+	String saveDF=GetDataFolder(1)
+	SetDataFolder root:$dfname
+
+	String bname="P"+bname0
+	Variable dfindex,cindex,pindex
+	String wvCent,wvHght,wvFWHM,wvArea,wvPind,wvCind,wvWind
+	wvCent=bnm_dest+"_c"
+	wvHght=bnm_dest+"_h"
+	wvFWHM=bnm_dest+"_w"
+	wvArea=bnm_dest+"_a"
+	wvPind=bnm_dest+"_iP"
+	wvCind=bnm_dest+"_iC"
+	wvWind=bnm_dest+"_iW"
+	Wave wwvCent=$wvCent
+	Wave wwvHght=$wvHght
+	Wave wwvFWHM=$wvFWHM
+	Wave wwvArea=$wvArea
+	Wave wwvPind=$wvPind
+	Wave wwvCind=$wvCind
+	Wave wwvWind=$wvWind
+	
+	String ywv=Csrwave(A)
+	String xwv=CsrXwave(A)
+	String prefix="Wil"
+	Variable sl1=strlen(prefix),sl=strlen(ywv)	
+	pindex=pcsr(A)
+	String s0=ywv[strlen(bname)+1,sl-1]
+	cindex=str2num(StringFromList(0,ywv[strlen(bname)+1,sl-1],"_"))
+	dfindex=str2num(dfname[sl1,sl-1])
+	
+	String bname00=bname+"_"+num2str(cindex)
+	String wvFWHM0=bname00+"_w"
+	String wvArea0=bname00+"_a"
+	Wave wwvCent0=$xwv
+	Wave wwvHght0=$ywv
+	Wave wwvFWHM0=$wvFWHM0
+	Wave wwvArea0=$wvArea0
+	Redimension/N=(g_ipeak+1) wwvCent,wwvHght,wwvFWHM,wwvArea,wwvPind,wwvCind,wwvWind
+	wwvHght[g_ipeak]=wwvHght0[pindex]
+	wwvCent[g_ipeak]=wwvCent0[pindex]
+	wwvFWHM[g_ipeak]=wwvFWHM0[pindex]
+	wwvArea[g_ipeak]=wwvArea0[pindex]
+	wwvPind[g_ipeak]=pindex
+	wwvCind[g_ipeak]=cindex
+	wwvWind[g_ipeak]=dfindex
+	g_ipeak+=1
+
+	SetDataFolder saveDF
+
+End
+
+// assume peak format is P(dfindex)_(peakno)_{c;h;w;a;prms;T}
+
+Function RetreivePeakIndexAll(dfindex,peakno)
+	Variable dfindex,peakno
+	
+	String saveDF=GetDataFolder(1)
+	String dfname="WiL"+num2str(dfindex)
+	SetDataFolder root:$dfname
+	
+	String bname="P"+num2str(dfindex)+"_"+num2str(peakno)
+	String wvname=bname+"_name"
+	String wvCent=bname+"_c"
+	String wvHght=bname+"_h"
+	String wvFWHM=bname+"_w"
+	String wvArea=bname+"_a"
+	String wvWind=bname+"_Wi"
+	String wvCind=bname+"_Ci"
+	String wvPind=bname+"_Pi"
+	
+	Wave/T wwvn=$wvname
+	String wvn
+	Variable n=DimSize(wwvn,0),i
+	Make/O/N=(n) $wvFWHM,$wvArea,$wvWind,$wvCind,$wvPind
+	Wave wwvCent=$wvCent,wwvHght=$wvHght,wwvFWHM=$wvFWHM,wwvArea=$wvArea
+	Wave wwvWind=$wvWind,wwvCind=$wvCind,wwvPind=$wvPind
+	
+	String prefix="PWil"+num2str(dfindex)+"_1"
+	String wvArea_orig,wvFWHM_orig
+	Variable cindex,pindex
+
+	do
+		wvn=wwvn[i]
+//		height=wwvCent[i]
+		cindex=RetrieveCindex(wvn,prefix)
+		pindex=SeekPindexFromCH(wvn,wwvHght[i])
+
+		wvArea_orig=prefix+"_"+num2str(cindex)+"_a"
+		wvFWHM_orig=prefix+"_"+num2str(cindex)+"_w"
+		Wave wwvA_orig=$wvArea_orig,wwvF_orig=$wvFWHM_orig
+		if(pindex>=0)
+			wwvFWHM[i]=wwvF_orig[pindex]
+			wwvArea[i]=wwvA_orig[pindex]
+		endif
+		wwvWind[i]=dfindex
+		wwvCind[i]=cindex
+		wwvPind[i]=pindex
+
+		i+=1
+	while(i<n)
+
+	SetDataFolder saveDF
+End
+
+// Wavname is format of : (prefix)_(cindex)_{c;h;w;a;T}
+Function RetrieveCindex(wvname,prefix)
+	String wvname,prefix
+	
+	String s=wvname[strlen(prefix),strlen(wvname)-1]
+	return(str2num(StringFromList(1,s,"_")))
+End
+
+Function SeekPindexFromCH(wvCH,valCH)
+	String wvCH
+	Variable valCH
+	
+	Wave wv=$wvCH
+	Variable eps=1e-9,n=DimSize(wv,0),i,ind=-1
+	do
+		if(abs(wv[i]-valCH)<eps)
+			ind=i
+		endif
+		i+=1
+	while(i<n)
+	return ind
+End
+
+Function ShowArrangedPeakTable(dfindex,peakno)
+	Variable dfindex,peakno
+
+	String saveDF=GetDataFolder(1)
+	String dfname="WiL"+num2str(dfindex)
+	SetDataFolder root:$dfname
+	
+	String bname="P"+num2str(dfindex)+"_"+num2str(peakno)
+	String wvname=bname+"_name"
+	String wvCent=bname+"_c"
+	String wvHght=bname+"_h"
+	String wvFWHM=bname+"_w"
+	String wvArea=bname+"_a"
+	String wvWind=bname+"_Wi"
+	String wvCind=bname+"_Ci"
+	String wvPind=bname+"_Pi"
+	
+	Edit $wvname,$wvCent,$wvHght
+	RetreivePeakIndexAll(dfindex,peakno)
+	AppendToTable $wvFWHM,$wvArea,$wvWind,$wvCind,$wvPind
+
 End
