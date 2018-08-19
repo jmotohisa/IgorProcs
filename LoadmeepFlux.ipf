@@ -44,22 +44,22 @@ Macro initLoadMeepFlux(thePath)
 End
 
 // load single flux data
-Proc LoadMeepFlux_single(path,fname,wvname,wantToDisp,freqconv)
+Proc LoadMeepFlux_single(path,fname,wvname,wantToDisp,xaxis)
 	String path=g_path,fname,wvname
-	Variable wantToDisp=1,freqconv=1
+	Variable wantToDisp=1,xaxis=1
 	Prompt path,"path name"
 	Prompt fname,"file name"
 	Prompt wvname,"wave name"
 	Prompt wanttodisp,"Display graph ?", popup,"yes;append;no"
-	Prompt freqconv,"multiply freq with 2*pi ?",popup,"yes;no"
+	Prompt xaxis,"x-axis",popup,"Freq;2*pi*freq;wavelength"
 	PauseUpdate; Silent 1
 	
-	print FLoadMeepFlux0(path,fname,wvname,wantToDisp,freqconv)
+	print FLoadMeepFlux0(path,fname,wvname,wantToDisp,xaxis)
 End
 
-Function FLoadMeepFlux0(path,fname,wvname,wantToDisp,freqconv)
+Function FLoadMeepFlux0(path,fname,wvname,wantToDisp,xaxis)
 	String path,fname,wvname
-	Variable wantToDisp,freqconv
+	Variable wantToDisp,xaxis
 	
 	Variable fmin,fmax,index,ref
 	String destw0,xwname,dwname,dest
@@ -86,13 +86,17 @@ Function FLoadMeepFlux0(path,fname,wvname,wantToDisp,freqconv)
 	endif
 	xwname=StringFromList(0,S_waveNames,";")
 	Wave xwnamew=$xwname
-	if(freqconv==1)
+	if(xaxis==2)
 		xwnamew*=2*pi
-	Endif
+	endif
 	WaveStats/Q xwnamew
 	fmin=V_min
 	fmax=V_max
-
+	SetScale x,fmin,fmax,"",xwnamew
+	if(xaxis==3)
+		xwnamew=1/xwnamew
+	endif
+	
 // load flux data
 	LoadWave/J/M/D/N=dummy/K=0/L={0,0,0,2,0} /P=$path/Q fname
 	if(V_flag==0)
@@ -102,8 +106,12 @@ Function FLoadMeepFlux0(path,fname,wvname,wantToDisp,freqconv)
 	SetScale x,fmin,fmax,"",$dwname
 	Duplicate/O $dwname,$wvname
 
-	if(wantToDisp==1)
-		MatrixWavePlotFunc(wvname,1,1,"_none_")
+	if(wantToDisp==1 || wantToDisp==2)
+		if(xaxis==1 || xaxis==2)
+			MatrixWavePlotFunc(wvname,wantToDisp,1,"_none_")
+		else
+			MatrixWavePlotFunc(wvname,wantToDisp,1,NameOfWave(xwnamew))
+		endif
 	endif
 
 	return DimSize($wvname,1) // number of waves (including transmission)
@@ -112,30 +120,34 @@ End
 // will be named as
 //	reference: trn0_+suffix, refl0_0_+suffix, refl0_1_+suffix,...
 //	target: "trn1_"+suffix, refl0_0_0, "refl1_1_"+suffix,...
-Macro LoadMeepFluxRefl(pathname,fname,bname,withloss,wanttodisp,freqconv,squared)
-	Variable suffix,withloss=2,wanttodisp=1,freqconv=1,squared=1
+Macro LoadMeepFluxRefl(pathname,fname,bname,withloss,wanttodisp,xaxis,squared)
+	Variable suffix,withloss=2,wanttodisp=1,xaxis=1,squared=1
 	String fname,bname,pathname=g_path
 	Prompt pathName,"path name"
 	Prompt fname,"base file name"
 	Prompt bname,"base wave name"
 	Prompt withloss,"calculate loss ?",popup,"yes;no"
 	Prompt wanttodisp,"Display graph ?", popup,"yes;append;no"
-	Prompt freqconv,"multiply freq with 2*pi ?",popup,"yes;no"
+	Prompt xaxis,"x-axis",popup,"Freq;2*pi*freq;wavelength"
 	Prompt squared,"take square root ?",popup,"yes;no"
 	PauseUpdate; Silent 1
 
-	FLoadMeepFluxRefl(pathname,fname,bname,withloss,wanttodisp,freqconv,squared)
+	FLoadMeepFluxRefl(pathname,fname,bname,withloss,wanttodisp,xaxis,squared)
 End
-	
-Function FLoadMeepFluxRefl(pathname,fname,bname,withloss,wanttodisp,freqconv,squared)
-	Variable withloss,wanttodisp,freqconv,squared
+
+Function FLoadMeepFluxRefl(pathname,fname,bname,withloss,wanttodisp,xaxis,squared)
+	Variable withloss,wanttodisp,xaxis,squared
 	String pathname,fname,bname
 
 	String rwname,twname,wname0,wname1,wn_abs1
 	Variable n1,n2,index
+	
+	if(strlen(fname)==0)
+		fname=GetFileBaseNameMeepFlux(pathname)
+	endif
 
-	n1=FLoadMeepFlux0(pathName,fname+"-0.dat","ref",3,freqconv)//
-	n2=FLoadMeepFlux0(pathName,fname+"-1.dat","tgt",3,freqconv)//
+	n1=FLoadMeepFlux0(pathName,fname+"-0.dat","ref",3,xaxis)//
+	n2=FLoadMeepFlux0(pathName,fname+"-1.dat","tgt",3,xaxis)//
 	if(n1==0 || n2==0)
 		printf "Cannot load data from ",fname,"-0.dat or ",fname,"-1.dat. Aborting."
 		return -1
@@ -158,7 +170,7 @@ Function FLoadMeepFluxRefl(pathname,fname,bname,withloss,wanttodisp,freqconv,squ
 	index=0
 	do
 //		wtwname[][index]/=-wrwname[p][index]
-	if(index==0)
+	if(index==0) // transmission
 		wtwname[][index]/=wrwname[p][0]
 	else
 		wtwname[][index]/=-wrwname[p][0]
@@ -206,29 +218,73 @@ Function FLoadMeepFluxRefl(pathname,fname,bname,withloss,wanttodisp,freqconv,squ
 		index+=1
 	while(index<n1)
 	
+	if(withloss==1)
+		CalcLossMeepFluc(twname)
+	endif
+	
 	if(squared==1)
 		wtwname = sqrt(wtwname)
 	endif
 	
-	if(wantToDisp==1)
-		MatrixWavePlotFunc(twname,1,1,"_none_")
-	else
-		if(wantToDisp==2)
-			MatrixWavePlotFunc(twname,2,1,"_none_")
+	if(wantToDisp==1 || wantToDisp==2)
+		if(xaxis==1 || xaxis==2)
+			MatrixWavePlotFunc(twname,wantToDisp,1,"_none_")
+		else
+			String xtwname=twname+"_0"
+			Variable nrow
+			nrow=DimSize($twname,0)
+			Duplicate/O $twname,$xtwname
+			Wave wxtwname=$xtwname
+			Redimension/N=(nrow) wxtwname
+			wxtwname=1/x
+			MatrixWavePlotFunc(twname,wantToDisp,1,xtwname)
 		endif
 	endif
 	SetAxis left 0,1
+	// todo : modify plot appearance: 0:transmittance, 1-(n1-1): reflectivity, n1-(2*n1-2): loss/absorption
 End
 
-Macro LoadMeepFlux1(thePath,fn,suffix,withloss,wanttodisp,freqconv)
+// calculate Loss/Absorption
+Function CalcLossMeepFluc(wvname)
+	String wvname
+	
+	Wave wwv=$wvname
+	Variable nrow=DimSize(wwv,0),ncol=DimSize(wwv,1),index
+	Redimension/N=(nrow,2*ncol-1) wwv
+	
+	index=0
+	do
+		wwv[][ncol+index]=1-wwv[p][0]-wwv[p][index+1]
+		index+=1
+	while(index<ncol-1)
+End
+
+Function/S GetFileBaseNameMeepFlux(thePath)
+	String thePath
+	
+	String fname
+	Variable ref
+	Open /D/R/P=$thePath/T=".DAT" ref
+//	if(V_flag!=0)
+//		Close ref
+//		return ""
+//	endif
+	fname=S_filename
+//	Close ref
+	fname=wname(fname)
+	fname=fname[0,strlen(fname)-3] // remove "-0" or "-1"
+	return fname
+End
+
+Macro LoadMeepFlux1(thePath,fn,suffix,withloss,wanttodisp,xaxis)
 	String fn,thePath
-	Variable suffix,withloss=2,wanttodisp=1,freqconv=1
+	Variable suffix,withloss=2,wanttodisp=1,xaxis=1
 	Prompt thePath, "Name of path containing flux files", popup PathList("*", ";", "")+"_New Path_"
 	Prompt fn,"base file name"
 	Prompt suffix,"suffix number"
 	Prompt withloss,"calculate loss ?",popup,"yes;no"
 	Prompt wanttodisp,"Display graph ?", popup,"yes;append;no"
-	Prompt freqconv,"multiply freq with 2*pi ?",popup,"yes;no"
+	Prompt xaxis,"x-axis",popup,"Freq;2*pi*freq;wavelength"
 	PauseUpdate; Silent 1
 	
 	if (CmpStr(thePath, "_New Path_") == 0)		// user selected new path ?
@@ -237,17 +293,17 @@ Macro LoadMeepFlux1(thePath,fn,suffix,withloss,wanttodisp,freqconv)
 	endif
 	
 	String fname0=fn+"-0.dat",fname1=fn+"-1.dat"
-	FLoadMeepFlux1(thePath,fname0,fname1,suffix,withloss,wanttodisp,freqconv)
+	FLoadMeepFlux1(thePath,fname0,fname1,suffix,withloss,wanttodisp,xaxis)
 End
 
-Macro LoadMeepFlux2(thePath,fn,suffix,wanttodisp,freqconv)
+Macro LoadMeepFlux2(thePath,fn,suffix,wanttodisp,xaxis)
 	String fn,thePath
-	Variable suffix,withloss=2,wanttodisp=1,freqconv=1
+	Variable suffix,withloss=2,wanttodisp=1,xaxis=1
 	Prompt thePath, "Name of path containing flux files", popup PathList("*", ";", "")+"_New Path_"
 	Prompt fn,"base file name"
 	Prompt suffix,"suffix number"
 	Prompt wanttodisp,"Display graph ?", popup,"yes;append;no"
-	Prompt freqconv,"multiply freq with 2*pi ?",popup,"yes;no"
+	Prompt xaxis,"x-axis",popup,"Freq;2*pi*freq;wavelength"
 	PauseUpdate; Silent 1
 	
 	if (CmpStr(thePath, "_New Path_") == 0)		// user selected new path ?
@@ -256,11 +312,11 @@ Macro LoadMeepFlux2(thePath,fn,suffix,wanttodisp,freqconv)
 	endif
 	
 	String fname0=fn+"-0.dat",fname1=fn+"-1.dat"
-	FLoadMeepFlux2(thePath,fname0,fname1,suffix,wanttodisp,freqconv)
+	FLoadMeepFlux2(thePath,fname0,fname1,suffix,wanttodisp,xaxis)
 End
 
-Function FLoadMeepFlux2(pathname,fname0,fname1,suffix,wanttodisp,freqconv)
-	Variable suffix,wanttodisp,freqconv
+Function FLoadMeepFlux2(pathname,fname0,fname1,suffix,wanttodisp,xaxis)
+	Variable suffix,wanttodisp,xaxis
 	String pathname,fname0,fname1
 
 	String bname
@@ -268,9 +324,9 @@ Function FLoadMeepFlux2(pathname,fname0,fname1,suffix,wanttodisp,freqconv)
 	Variable n1,n2,index
 
 	bname="r"
-	n1=FLoadMeepFlux0(pathName,fname0,bname,3,freqconv)//
+	n1=FLoadMeepFlux0(pathName,fname0,bname,3,xaxis)//
 	bname="t"
-	n2=FLoadMeepFlux0(pathName,fname1,bname,3,freqconv)//
+	n2=FLoadMeepFlux0(pathName,fname1,bname,3,xaxis)//
 	if(n1==0 || n2==0)
 		return -1
 	endif
