@@ -16,6 +16,7 @@
 //		06/09/06 ver. 0.21a: modified not to make wave to display graph of eigenvalue equation (temporary, use optional parameter to display it in the future vesion)
 //		07/01/09 ver. 0.22a: solution of odd states added
 //		08/05/06	ver 0.22a1: procedure init_phsicalConstants becomes a independent procedure PhysicalConstants.ipf
+//		18/10/02	ver 0.3a1: calculation of SL energy added
 
 Macro init_SQW(wv,l1,l2)
 	String wv
@@ -73,6 +74,49 @@ Macro SQWEnergy_WellWidth(wv,V0,mw,mb,fgraph)
 	endif
 End
 
+Function Ffind_energy_SQW(Lw, Lb,V0,mw,mb,fd)
+	Variable Lw,Lb,V0,mw,mb
+	Variable fd
+
+	Variable alph,beta
+	Variable a,b
+	Variable epsilon=V0/1000,e0
+	NVAR g_MEL,g_EC,g_HBAR
+	String prmwv="sqw_prm",tempwv="sqw_tempwv",reswv="sqw_results"
+	Wave wprmwv=$prmwv
+	wprmwv[0]=Lw
+	wprmwv[1]=Lb
+	wprmwv[2]=V0
+	wprmwv[3]=mw
+	wprmwv[4]=mb
+
+	if(fd==1)
+		Make/O $tempwv
+		Display $tempwv
+	endif
+	Wave wtempwv=$tempwv
+
+	e0=g_HBAR^2*(pi/Lw)^2/(2*g_MEL*mw)/g_EC
+	if(e0>V0)
+		e0=v0*0.999
+	endif
+	a = 2.*g_MEL*wprmwv[3]*g_EC/(g_HBAR*g_HBAR)
+	if(fd==1)
+		SetScale/I x,epsilon,V0,wtempwv
+		wtempwv=sqw_function_even(wprmwv,x)
+//		$tempwv= sqrt( mw/mb * (V0/x-1.))*cos(sqrt(a*x)*Lw/2.) - sin(sqrt(a*x)*Lw/2.)
+		//sqrt(w[3]/w[4] * (w[2]/xx-1.))*cos(a*sqrt(xx)*w[0]/2.) - sin(a*sqrt(xx)*w[0]/2.)
+		SetAxis left -2,2 
+		ModifyGraph zero(left)=1
+	endif
+
+	FindRoots/Q/L=(epsilon)/H=(e0) sqw_function_even,wprmwv
+	If(V_flag!=0)
+		print V_flag
+	Endif
+	return(V_Root)
+End
+
 Macro find_energy_SQW(Lw, Lb,V0,mw,mb,fd)
 	Variable Lw=10e-9,Lb=0,V0=1,mw=0.067,mb=0.067
 	Variable fd=1
@@ -84,38 +128,7 @@ Macro find_energy_SQW(Lw, Lb,V0,mw,mb,fd)
 	Prompt fd,"draw tempgraph ?",popup,"yes;no"
 	PauseUpdate;Silent 1
 
-	Variable alph,beta
-	Variable a,b
-	Variable epsilon=V0/1000,e0
-	String prmwv="sqw_prm",tempwv="sqw_tempwv",reswv="sqw_results"
-	$prmwv[0]=Lw
-	$prmwv[1]=Lb
-	$prmwv[2]=V0
-	$prmwv[3]=mw
-	$prmwv[4]=mb
-
-	if(fd==1)
-		Make/O $tempwv
-		Display $tempwv
-	endif
-
-	e0=g_HBAR^2*(pi/Lw)^2/(2*g_MEL*mw)/g_EC
-	if(e0>V0) then
-		e0=v0*0.999
-	endif
-	a = 2.*g_MEL*$prmwv[3]*g_EC/(g_HBAR*g_HBAR)
-	if(fd==1)
-		SetScale/I x,epsilon,V0,$tempwv
-		$tempwv= sqrt( mw/mb * (V0/x-1.))*cos(sqrt(a*x)*Lw/2.) - sin(sqrt(a*x)*Lw/2.)
-		SetAxis left -2,2 
-		ModifyGraph zero(left)=1
-	endif
-
-	FindRoots/Q/L=(epsilon)/H=(e0) sqw_function_even,$prmwv
-	If(V_flag!=0)
-		print V_flag
-	Endif
-	g_energy= V_Root
+	g_energy=Ffind_energy_SQW(Lw, Lb,V0,mw,mb,fd)
 End
 
 Macro find_energy_SQW_all(Lw, Lb,V0,mw,mb,fd)
@@ -262,4 +275,89 @@ Function Func_asqw(ene,lw,v1,v3,mw,mb1,mb3)
 	bb=alph1*mb3/(beta3*mw)
 	tanKL=tan(lw*alph1)
 	return((aa+bb)*cos(lw*alph1)+(1-aa*bb)*sin(lw*alph1))
+End
+
+//	$prmwv[0]=Lw
+//	$prmwv[1]=Lb
+//	$prmwv[2]=V0
+//	$prmwv[3]=mw
+//	$prmwv[4]=mb
+
+Function Ffind_energy_SL1(Lw, Lb,V0,mw,mb,fd)
+	Variable Lw,Lb,V0,mw,mb
+	Variable fd
+	
+	Variable alph,beta
+	Variable a,b
+	Variable epsilon=V0/1000,e0
+	String prmwv="sqw_prm",tempwv="sqw_tempwv",reswv="sqw_results"
+	NVAR g_energy,g_HBAR,g_EC,g_MEL
+	Wave wprmwv=$prmwv
+	
+	wprmwv[0]=Lw
+	wprmwv[1]=Lb
+	wprmwv[2]=V0
+	wprmwv[3]=mw
+	wprmwv[4]=mb
+
+	if(fd==1)
+		Make/O $tempwv
+		Display $tempwv
+	endif
+
+	e0=g_HBAR^2*(pi/Lw)^2/(2*g_MEL*mw)/g_EC
+	if(e0>V0)
+		e0=v0*0.999
+	endif
+	a = 2.*g_MEL*wprmwv[3]*g_EC/(g_HBAR*g_HBAR)
+	if(fd==1)
+		SetScale/I x,epsilon,V0,$tempwv
+		Wave wtempwv=$tempwv
+		wtempwv=SL_function_odd_min(wprmwv,x)
+//		wtempwv= sqrt( mw/mb * (V0/x-1.))*cos(sqrt(a*x)*Lw/2.) - sin(sqrt(a*x)*Lw/2.)
+		SetAxis left -2,2 
+		ModifyGraph zero(left)=1
+	endif
+
+	FindRoots/Q/L=(epsilon)/H=(e0) SL_function_odd_min,$prmwv
+	If(V_flag!=0)
+		print V_flag
+	Endif
+//	g_energy= V_Root
+
+	return(V_Root)
+End
+
+Macro find_energy_SL1(Lw, Lb,V0,mw,mb,fd)
+	Variable Lw=10e-9,Lb=0,V0=1,mw=0.067,mb=0.067
+	Variable fd=1
+	Prompt Lw,"Well width (m)"
+	Prompt Lb,"Barrier width (m)"
+	Prompt V0,"Barrier height (eV)"
+	Prompt mw,"effective mass in well (m0)"
+	Prompt mb,"effective mass in barrier (m0)"
+	Prompt fd,"draw tempgraph ?",popup,"yes;no"
+	PauseUpdate;Silent 1
+
+	g_energy=Ffind_energy_SL1(Lw, Lb,V0,mw,mb,fd)
+End
+
+Function SL_function_odd_min(w,xx)
+	Wave w
+	Variable xx
+	
+	NVAR g_MEL,g_EC,g_HBAR
+	Variable x1,x2
+	Variable a,b,val
+	a = w[0]*sqrt(2.*g_MEL*w[3]*g_EC)/g_HBAR
+	b = w[1]*sqrt(2.*g_MEL*w[4]*g_EC)/g_HBAR
+	x1=sqrt(xx)
+	if(xx<w[2])
+		x2=sqrt(w[2]-xx)
+		val=sin(a/2*x1)-sqrt(w[3]/w[4]*(w[2]/xx-1))*tanh(b*x2/2)*cos(a/2*x1)
+	else
+		x2=sqrt(xx-w[2])
+		val=tan(a/2*x1)+sqrt(w[3]/w[4]*(1-w[2]/xx))*tan(b*x2/2);
+	endif
+	return(val)
 End

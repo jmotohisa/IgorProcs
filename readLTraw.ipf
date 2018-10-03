@@ -355,24 +355,36 @@ Function SplitData(orig,num_row,num_column,plotname)
 	PauseUpdate; Silent 1
 	
 	Wave wvorig=$orig
-	Variable num0,num1,num_row1
+	Variable num0,num1,num_row1,fprm=0
 	num0=DimSize(wvorig,0)
 	if(plotname==1) // transient, do not split, just duplicate
 		return num0
 	endif
 
-	if(plotname==2) // AC 
+	if(plotname==2 || plotname==3) // AC or operation point
+		if(num0!=num_row*num_column)
+			print "wave size =",num0,", does not much."
+			fprm=-1
+			return -1
+		endif
 		num1=num0
 		num_row1=num_row
-	else // Additional point is added somehow
-		num1=num0+1
-		num_row1=num_row+1
+	else // DC, Additional point is added somehow in parametrix sweep
+		if(num0==(num_row+1)*num_column-1)
+			fprm=1
+			num1=num0+1
+			num_row1=num_row+1
+		elseif(num0==num_row*num_column)
+			fprm=-1
+			num1=num0
+			num_row1=num_row
+		endif
+		if(fprm==0)
+			print "wave size =",num0,", does not much."
+			return -1
+		endif
 	endif
-	if(num1!=(num_row1)*num_column)
-		print "wave size =",num0,", does not much."
-		return -1
-	endif
-	
+
 //	Wave dummy
 	Duplicate/O wvorig,dummy
 	Redimension/N=(num_row,num_column) dummy
@@ -381,10 +393,10 @@ Function SplitData(orig,num_row,num_column,plotname)
 	i1=0
 	i2=0
 	do
-		if(plotname==0)
-			i1=i2*(num_row+1) //DC transfer
+		if(fprm==1)
+			i1=i2*(num_row+1) //DC transfer, parametric sweep
 		else
-			i1=i2*(num_row) // AC analysis
+			i1=i2*(num_row) // else
 		endif
 		dummy[][i2]=wvorig[p+i1]
 		i2+=1
@@ -398,21 +410,27 @@ Function SplitData_x(orig,num_row,num_column,plotname)
 	PauseUpdate; Silent 1
 	
 	Variable num0,num1,num_row1
+	Variable fprm=0
 	num0=DimSize($orig,0)
 	if(plotname==1) // transient data cannot be split
 		return -1
 	Endif
 
-	if(plotname==2) // AC 
-		num1=num0
-		num_row1=num_row
-	else // Additional point is added somehow
-		num1=num0+1
-		num_row1=num_row+1
-	endif
-	if(num1!=num_row1*num_column)
-		print "wave size =",num0,", does not much."
-		return -1
+	if(plotname==2 || plotname==3) // AC or operation point 
+		if(num0!=num_row*num_column)
+			print "wave size =",num0,", does not much."
+			return -1
+		endif
+	else // DC, Additional point is added somehow in parametrix sweep
+		if(num0==(num_row+1)*num_column-1)
+			fprm=1
+		elseif(num0==num_row*num_column)
+			fprm=-1
+		endif
+		if(fprm==0)
+			print "wave size =",num0,", does not much."
+			return -1
+		endif
 	endif
 	
 	Redimension/N=(num_row) $orig
