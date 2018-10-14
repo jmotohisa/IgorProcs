@@ -175,3 +175,70 @@ Function FindIntensityAtCurrent(iwvname,lwvname,levelToFind)
 	
 	return(FindLevelXY(iwvname,lwvname,levelToFind))
 End
+
+Macro ShowNplot(wvname,temperature)
+	String wvname
+	Variable temperature=300
+	Prompt wvname,"IV wave name",popup,WaveList(g_prefix+"*",";","")
+	Prompt temperature,"Temperature"
+	PauseUpdate;Silent 1
+	
+	String logwvname="log"+wvname
+	String dlogwvname="dlog"+wvname
+	String gname="GraphN_"+wvname
+	Duplicate/O $wvname,$logwvname
+	SetScale d 0,1,"", $logwvname
+	$logwvname=ln($wvname)
+	Differentiate $logwvname /D=$dlogwvname 
+	$dlogwvname=1/($dlogwvname*0.0258/300*temperature)
+	Display/W=(679,44,1230,502) $dlogwvname vs $wvname
+	DoWindow/C $gname
+	ModifyGraph log(bottom)=1
+//	AppendToGraph/R $xwvname vs $wvname
+//	ModifyGraph gfSize=24
+//	TextBox/C/N=text0/F=0/A=MC legtxt
+	Label bottom "Current I(\U)"
+	Label left "Idelity Factor n"
+	SetAxis left 1,10
+	ModifyGraph gfSize=24,tick=2,mirror=1,standoff=0
+	ModifyGraph mode=4,marker=19,rgb($dlogwvname)=(0,0,0)
+//	Label right "Voltage (\U)"
+//	ModifyGraph rgb($xwvname)=(0,0,65535)
+//	ShowInfo
+//	g_wvname=wvname
+End
+
+Macro ShowNplot2(wvname,temperature,Rs)
+	String wvname
+	Variable temperature=300,Rs=150
+	Prompt wvname,"IV wave name",popup,WaveList(g_prefix+"*",";","")
+	Prompt temperature,"Temperature"
+	Prompt Rs, "series resistance"
+	PauseUpdate;Silent 1
+	
+	String logwvname="log"+wvname
+	String dlogwvname="dlog2"+wvname
+	String diwvname="di2"+wvname
+	String gname="GraphN2_"+wvname
+	Duplicate/O $wvname,$logwvname,$diwvname
+	SetScale d 0,1,"", $logwvname
+	$logwvname=ln($wvname)
+	Differentiate $logwvname /D=$dlogwvname 
+	Differentiate $diwvname 
+	$dlogwvname=1/($dlogwvname*0.0258/300*temperature)*(1-Rs*$diwvname)
+	Display/W=(679,44,1230,502) $dlogwvname vs $wvname
+	DoWindow/C $gname
+	ModifyGraph log(bottom)=1
+//	AppendToGraph/R $xwvname vs $wvname
+//	ModifyGraph gfSize=24
+//	TextBox/C/N=text0/F=0/A=MC legtxt
+	Label bottom "Current I(\U)"
+	Label left "Idelity Factor n"
+	SetAxis left 1,10
+	ModifyGraph gfSize=24,tick=2,mirror=1,standoff=0
+	ModifyGraph mode=4,marker=19,rgb($dlogwvname)=(0,0,0)
+//	Label right "Voltage (\U)"
+//	ModifyGraph rgb($xwvname)=(0,0,65535)
+//	ShowInfo
+//	g_wvname=wvname
+End
