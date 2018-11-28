@@ -198,7 +198,7 @@ Macro ShowNplot(wvname,temperature)
 //	ModifyGraph gfSize=24
 //	TextBox/C/N=text0/F=0/A=MC legtxt
 	Label bottom "Current I(\U)"
-	Label left "Idelity Factor n"
+	Label left "Ideality Factor n"
 	SetAxis left 1,10
 	ModifyGraph gfSize=24,tick=2,mirror=1,standoff=0
 	ModifyGraph mode=4,marker=19,rgb($dlogwvname)=(0,0,0)
@@ -233,7 +233,7 @@ Macro ShowNplot2(wvname,temperature,Rs)
 //	ModifyGraph gfSize=24
 //	TextBox/C/N=text0/F=0/A=MC legtxt
 	Label bottom "Current I(\U)"
-	Label left "Idelity Factor n"
+	Label left "Ideality Factor n"
 	SetAxis left 1,10
 	ModifyGraph gfSize=24,tick=2,mirror=1,standoff=0
 	ModifyGraph mode=4,marker=19,rgb($dlogwvname)=(0,0,0)

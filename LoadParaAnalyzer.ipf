@@ -22,7 +22,7 @@ Function FLoadParaAnalyzer(fname,path,wvname,nmflag)
 	String fname,path,wvname
 	Variable nmflag
 
-	String extstr,dum_header,DataNames, units,dim1str,dim2str,str,wdummy,wdummy2
+	String extstr,dum_header,DataNames, units="",unit0,dim1str,dim2str,str,wdummy,wdummy2
 	Variable ref,found,offset,index
 	String xwv,ywv
 	extstr=".csv"
@@ -56,22 +56,26 @@ Function FLoadParaAnalyzer(fname,path,wvname,nmflag)
 				step=str2num(StringFromList(2,dum_header,","))
 			endif
 		elseif(GrepString(dum_header,"DataName"))
-			DataNames=TrimString(dum_header,"DataName")
+			DataNames=TrimString0(dum_header,"DataName")
 			print "DataName =", DataNames
 		elseif(GrepString(dum_header,"DataValue"))
 			found=1
 		elseif(strsearch(StringFromList(0,dum_header,","),"AnalysisSetup",0,2)>=0)
 			if(strsearch(StringFromList(1,dum_header,","),"Analysis.Setup.Vector.List.Datum.Unit",0,2)>=0)
-				units=TrimString(dum_header,"AnalysisSetup, Analysis.Setup.Vector.List.Datum.Unit")
+				units=TrimString0(dum_header,"AnalysisSetup, Analysis.Setup.Vector.List.Datum.Unit")
 			endif
 		elseif(strsearch(StringFromList(0,dum_header,","),"Dimension1",0,2)>=0)
-			dim1str=TrimString(dum_header,"Dimension1")
+			dim1str=TrimString0(dum_header,"Dimension1")
 		elseif(strsearch(StringFromList(0,dum_header,","),"Dimension2",0,2)>=0)
-			dim1str=TrimString(dum_header,"Dimension2")
+			dim1str=TrimString0(dum_header,"Dimension2")
 		endif
 		index+=1
 	while(found==0)
 	Close ref
+	// units not found
+	if(strlen(units)<=0)
+		units="V,A"
+	endif
 
 // read data
 //	LoadWav0e/J/D/W/K=0 "fname
@@ -88,7 +92,12 @@ Function FLoadParaAnalyzer(fname,path,wvname,nmflag)
 		endif
 		Wave wvdummy=$wdummy
 		SetScale/I x start,stop,StringFromList(0,units,","), wvdummy
-		SetScale d 0,0,StringFromList(index,units,","), wvdummy
+		if(ItemsInList(units,",") >= index)
+			unit0=StringFromList(index,units,",")
+		else
+			unit0=StringFromList(1,units,",")
+		endif
+		SetScale d 0,0,unit0, wvdummy
 		if(nmflag==1)
 			wdummy2=wvname+"_"+StringFromList(index,DataNames,",")
 		else
@@ -100,7 +109,7 @@ Function FLoadParaAnalyzer(fname,path,wvname,nmflag)
 	
 End
 
-Function/s TrimString(str_orig,str)
+Function/s TrimString0(str_orig,str)
 	String str_orig,str
 	return(ReplaceString(" ",RemoveEnding(RemoveFromList(str,str_orig,","),"\r"),""))
 End
@@ -115,7 +124,7 @@ Macro MultiParaAnalyzerLoad(thePath,which,dsetnm,nmflag)
 	PauseUpdate;Silent 1
 
 	Variable/G g_DSOindex
-	FMultiParaAnalyzerLoad(thePath, which,dsetnm)
+	FMultiParaAnalyzerLoad(thePath, which,dsetnm,nmflag)
 End
 
 Function FMultiParaAnalyzerLoad(thePath, which,dsetnm,nmflag)
