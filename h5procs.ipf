@@ -142,7 +142,7 @@ Function FJMH5open(fname,pname,wvname,dsname)
 	if(strlen(pname)<=0)
 		HDF5OpenFile/R fileID as fname
 	else
-		HDF5OpenFile/R/P=pname fileID as fname
+		HDF5OpenFile/R/P=$pname fileID as fname
 	endif
 
 	HDF5LoadData/N=dummy/O fileID,dsname
