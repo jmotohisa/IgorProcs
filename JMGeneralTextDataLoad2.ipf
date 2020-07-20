@@ -66,8 +66,10 @@ Function JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,sca
 		print fname
 	endif
 	
-	LoadWave/J/D/N=dummy/W/P=$pName/Q fName
+//	LoadWave/J/D/N=dummy/W/P=$pName/Q fName
+	LoadWave/G/D/N=dummy/W/P=$pName/Q fName
 	if(V_flag==0)
+		print "No waves loaded."
 		return(-1)
 	endif
 	nlwave=V_flag
@@ -140,6 +142,28 @@ Function JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,sca
 		index0+=1
 	while (index0<nlwave)
 	return(nlwave0)
+End
+
+Function JMGeneralDatLoaderFuncDummy(fname,pname,extName,skips)
+	String fName,pName,extName
+	Variable skips
+	
+	Variable ref,nlwave0,nlwave,xmin,xmax,index0
+	String snm,wvlist0,cmdstr
+	SVAR g_JMGTD_wname
+	if (strlen(fName)<=0)
+		Open /D/R/P=$pName/T=extName ref // windows
+		fName= S_fileName
+		print fname
+	endif
+	
+//	LoadWave/J/D/N=dummy/W/P=$pName/Q fName
+	LoadWave/G/D/N=dummy/W/P=$pName/Q fName
+	if(V_flag==0)
+		print "No waves loaded."
+		return(-1)
+	endif
+	return(V_flag)
 End
 
 // some sort of skelton

@@ -22,7 +22,7 @@ Macro LoadGeneralTextData(wn,fileName,pathName,suffix,flag,n_xcol,n_ycol)
 	Prompt wn,"wave name"
 	Prompt filename,"file name"
 	Prompt pathName,"path name"
-	Prompt suffix,"suffix",popup,"txt;dat"
+	Prompt suffix,"suffix",popup,"txt;dat;csv"
 	Prompt flag,"equal spacing ?",popup,"yes;no"
 	Prompt n_xcol,"column # for x ?" 
 	Prompt n_ycol,"column # for y ?" 
