@@ -66,8 +66,8 @@ Function JMGeneralDatLoaderFunc2(fname,pname,extName,index,prefix,suffixlist,sca
 		print fname
 	endif
 	
-//	LoadWave/J/D/N=dummy/W/P=$pName/Q fName
-	LoadWave/G/D/N=dummy/W/P=$pName/Q fName
+	LoadWave/J/D/N=dummy/W/P=$pName/Q fName
+//	LoadWave/G/D/N=dummy/W/P=$pName/Q fName
 	if(V_flag==0)
 		print "No waves loaded."
 		return(-1)
