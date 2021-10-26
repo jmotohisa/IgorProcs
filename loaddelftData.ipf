@@ -15,7 +15,7 @@
 //		2017/07/26	ver 0.3: making compatibility with DataSetOperations
 //		2017/10/17: load multiple data and cocatanate
 
-#include <Strings as Lists>
+//#include <Strings as Lists>
 #include "wname"
 #include "StrRpl"
 #include "MatrixOperations2"
@@ -77,11 +77,11 @@ Function/T FLoadDelftData(fileName,pathName,scalex,scaley,numdat,wantToDisp,conv
 	endif
 
 	do
-		dwname = GetStrFromList(S_waveNames,index,";")
+		dwname = StringFromList(index,S_waveNames,";")
 		if(strlen(dwname)==0)
 			break
 		endif
-		xwname=GetStrFromList(S_waveNames,index+1,";")
+		xwname=StringFromList(index+1,S_waveNames,";")
 		Wave wxwv=$xwname
 		wxwv/=scalex
 		index2=0
@@ -90,7 +90,7 @@ Function/T FLoadDelftData(fileName,pathName,scalex,scaley,numdat,wantToDisp,conv
 			if(index2==numdat)
 				break
 			endif
-			ywname=GetStrFromList(S_waveNames,index+2+index2,";")
+			ywname=StringFromList(index+2+index2,S_waveNames,";")
 			Wave yxwv=$ywname
 			yxwv /=scaley
 			wnames=wnames+","+ywname
@@ -104,7 +104,7 @@ Function/T FLoadDelftData(fileName,pathName,scalex,scaley,numdat,wantToDisp,conv
 			if(index2==numdat)
 				break
 			endif
-			ywname=GetStrFromList(S_waveNames,index+2+index2,";")
+			ywname=StringFromList(index+2+index2,S_waveNames,";")
 			SetScale/I x,V_min,V_max,"V",$ywname
 			SetScale y,0,1,"A",$ywname
 			if(numdat==1)
