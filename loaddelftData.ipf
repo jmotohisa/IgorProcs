@@ -14,6 +14,8 @@
 //		2007/04/27: strrpl is now in another procedure
 //		2017/07/26	ver 0.3: making compatibility with DataSetOperations
 //		2017/10/17: load multiple data and cocatanate
+//		2021/10/28: ability to load time series data of MeasureDelft3
+//		2021/11/10: load MCA data file of multiple storage
 
 //#include <Strings as Lists>
 #include "wname"
@@ -29,7 +31,7 @@ Macro LoadDelftData(fileName,pathName,scalex,scaley,numdat,wantToDisp,convMat,if
 	Prompt wantToDisp, "Do you want to display graphs?", popup, "Yes;No"
 	Prompt convMat, "Do you want to convert into Matrix?", popup, "Yes;No"
 	Prompt numdat,"Number of measurement per each scan"
-	Prompt iformat,"data format",popup,"Delft;Hokudai;Hokudai new"
+	Prompt iformat,"data format",popup,"Delft;Hokudai;Hokudai new;Hokudai time"
 	Prompt fdso,"add to dataset ?",popup,"yes;no"
 
 	Silent 1; PauseUpDate
@@ -67,6 +69,7 @@ Function/T FLoadDelftData(fileName,pathName,scalex,scaley,numdat,wantToDisp,conv
 	if(V_flag==0)
 		return(retstr)
 	endif
+	
 //	print S_wavenames
 	
 	destw0=strrpl(wname(fileName),"-","_")
@@ -76,6 +79,7 @@ Function/T FLoadDelftData(fileName,pathName,scalex,scaley,numdat,wantToDisp,conv
 		Display /W=(3,41,636,476)
 	endif
 
+	if(iformat!=4) // time series
 	do
 		dwname = StringFromList(index,S_waveNames,";")
 		if(strlen(dwname)==0)
@@ -123,6 +127,24 @@ Function/T FLoadDelftData(fileName,pathName,scalex,scaley,numdat,wantToDisp,conv
 		index+=2+numdat
 		index1+=1
 	while(1)
+	else // time data
+		index=0
+		do
+			ywname = StringFromList(index,S_waveNames,";")
+			if(strlen(ywname)==0)
+				break
+			endif
+			Wave yxwv=$ywname
+			yxwv /=scaley
+			destw=destw0+"_"+num2istr(index)
+			Duplicate/O yxwv,$destw
+			if(wantToDisp==1 %& convMat ==2)
+				AppendToGraph $destw
+			endif
+			index+=1
+		while(1)
+		retstr=retstr+destw0+";"
+	endif
 	
 	if(wantToDisp==1 %& convMat ==2)
 		Legend/N=text0/F=0/A=MC/X=-38.04/Y=39.31
@@ -146,7 +168,7 @@ Macro LoadDelftDataAll(pathName,scalex,scaley,numdat,wantToDisp,convmat,iformat,
 	Prompt wantToDisp, "Do you want to display graphs?", popup, "Yes;No"
 	Prompt convMat, "Do you want to convert into Matrix?", popup, "Yes;No"
 	Prompt numdat,"Number of measurement per each scan"
-	Prompt iformat,"data format",popup,"Delft;Hokudai;Hokudai new"
+	Prompt iformat,"data format",popup,"Delft;Hokudai;Hokudai new;Hokudai time"
 	Prompt fdso,"use dataset?",popup,"yes;no"
 	Prompt dsetnm,"data set name"
 
@@ -508,3 +530,154 @@ Function/T FLoadDelftData_mul(fileName,pathName,scalex,scaley,numdat,wantToDisp,
 	return(retstr)
 End
 
+Function/T FLoadDelftData_MCA(fileName,pathName,wvname,dt,fswap,wantToDisp)
+	String fileName
+	String pathName,wvname
+	Variable dt,fswap,wantToDisp
+	
+	String dwname,xwname,ywname,destw,destw0,wnames,cmdstr,buffer
+	Variable ref
+	Variable index
+	String retstr=""
+	
+	if (strlen(fileName)<=0)
+		if(CmpStr(IgorInfo(2), "Macintosh") == 0)
+//			Open /D/R/P=$pathName/T="sGBWTEXT" ref // MacOS
+			Open /D/R/P=$pathName/T=".DAT.MCA" ref // windows
+		else
+			Open /D/R/P=$pathName/T=".DAT.MCA" ref // windows
+		endif
+		fileName= S_fileName
+		print filename
+	endif
+	
+	LoadWave/G/D/N=$"dummy"/W/P=$pathName/Q fileName
+	if(V_flag==0)
+		return(retstr)
+	endif
+	
+//	print S_wavenames
+
+	if(strlen(wvname)==0)
+		destw0=strrpl(wname(fileName),"-","_")
+	else
+		destw0=wvname
+	endif
+	index=0
+	if(wantToDisp==1)
+		Display /W=(3,41,636,476)
+	endif
+	
+	index=0
+	do
+		dwname = StringFromList(index,S_waveNames,";")
+		if(strlen(dwname)==0)
+			break
+		endif
+		wave yxwv=$dwname
+
+		if(dt>0)
+			SetScale/P x,0,dt,"s",yxwv
+		else
+			SetScale/I x,0,10,"V",yxwv
+		endif
+		if(fswap==1)
+			Reverse yxwv
+		endif
+		destw=destw0+"_"+num2istr(index)
+		Duplicate/O yxwv,$destw
+		if(wantToDisp==1)
+			AppendToGraph $destw
+		endif
+		retstr=retstr+destw+";"
+		index+=1
+	while(1)
+	
+	if(wantToDisp==1)
+		Legend/N=text0/F=0/A=MC/X=-38.04/Y=39.31
+		Label left "Count (\\U)"
+		Label bottom "time (\\U)"
+		Execute("ColorWaves()")
+	endif
+	
+	return(retstr)
+End
+
+Function FLoadDelftData_MCAAll(pathName,dt,fswap,wantToDisp,fdso,dsetnm)
+	Variable dt,fswap, wantToDisp,fdso
+	String pathName,dsetnm
+	
+	String fileName,ftype,wvs,wvs0,wvname
+	NVAR g_DSOindex
+
+// dataset operation
+	if(fdso==1)
+		FDSOinit0(dsetnm)
+		DSOCreate0(0,1)
+		dsetnm=dsetnm+num2istr(g_DSOindex-1)
+		Wave/T wdsetnm=$dsetnm
+	endif
+
+	Variable index=0,index2=0,index3=0,pos
+	if(CmpStr(IgorInfo(2), "Macintosh") == 0)
+//		ftype="TEXT"
+		ftype=".DAT"
+	else
+		ftype=".DAT"
+	endif
+
+	if (CmpStr(PathName, "_New Path_") == 0)		// user selected new path ?
+		NewPath/O data			// this brings up dialog and creates or overwrites path
+		PathName = "data"
+	endif
+	
+	do
+		fileName = IndexedFile($pathName, index,ftype)
+		if(strlen(fileName)==0)
+			break
+		endif
+		pos=strsearch(filename,"_mul",0)
+		if(pos>0)
+			Print "loding file ",filename
+			wvname=wname(filename)
+			wvname=wvname[0,strlen(wvname)-5] // take out "_mul"
+			wvs=FLoadDelftData_MCA(fileName,pathName,wvname,dt,fswap,wantToDisp)
+			if(fdso==1)
+				index2=0
+				do
+					wvs0=StringFromList(index2,wvs,";")
+					if(strlen(wvs0)<=0)
+						break
+					endif
+					wdsetnm[index3]=wvs0
+					index2+=1
+					index3+=1
+				while(1)
+			endif
+		endif
+		index+=1
+	while(1)
+	
+	if(Exists("temporaryPath"))
+		KillPath temporaryPath
+	endif
+	
+	if(fdso==1)
+		Redimension/N=(index3) wdsetnm
+	endif
+End
+
+Macro LoadDelftData_MCAAll(pathName,dt,fswap,wantToDisp,fdso,dsetnm)
+	Variable dt=1e-12,fswap=1
+	String pathName="_New Path_",dsetnm="data"
+	Variable wantToDisp=1,fdso=1
+
+	Prompt pathName, "Name of path containing text files", popup PathList("*", ";", "")+"_New Path_"
+	Prompt dt,"time division"
+	Prompt fswap,"swap spectra ?",popup,"Yes;No"
+	Prompt wantToDisp, "Do you want to display graphs?", popup, "Yes;No"
+	Prompt fdso,"use dataset?",popup,"yes;no"
+	Prompt dsetnm,"data set name"
+	
+	FLoadDelftData_MCAAll(pathName,dt,fswap,wantToDisp,fdso,dsetnm)
+End

@@ -161,7 +161,7 @@ Macro ReadMCA8000D(fileName,pathName,wvName,flag,len,timediv)
 	Prompt flag,"swap channel ?",popup,"no;yes"
 	Silent 1; PauseUpDate
 	
-	FReadMCA8000D(fileName,pathName,wvName,flag,timediv)
+	FReadMCA8000D(fileName,pathName,wvName,flag,len,timediv)
 End
 
 Function/S FReadMCA8000D(fileName,pathName,wvName,flag,len,timediv)

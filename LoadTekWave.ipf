@@ -343,58 +343,78 @@ Function FMultiTekLoad3(thePath,TimeStampFlag)
 //	Endif
 End
 
-Macro CalculateDelay(wn,threshold)
+Macro CalculateDelay(wn,threshold,startX,endX)
 	String wn
-	Variable threshold
+	Variable threshold,startX,endX
 	Prompt wn,"wave name",popup,WaveList("*",";","")
 	Prompt threshold,"threshold"
 	PauseUpdate;Silent 1
 	
-	print FCalculateDelay(wn,threshold)
+	print FCalculateDelay(wn,threshold,startX,endX)
 End
 
-Function  FCalculateDelay(wn,threshold)
+
+// find delay between peak and percentheight of the peak
+Function FCalculateDelay(wn,threshold,withCursor)
 	String wn
-	Variable threshold
+	Variable threshold,withCursor
 	
-	Variable peakx,peakvalue,level
+	Variable peakx,peakvalue,level,startX_orig
+	Variable percentheight = 0.2
 	Wave wwn=$wn
+	Variable startx,endx,startx0
+
 	// find a peak (negative peak)
-	FindAPeak threshold,2,3,$wn
+	if(withCursor==1)
+		startx=hcsr(A)
+		startx0=pcsr(A)
+		endx=hcsr(B)
+		FindAPeak threshold,2,3,$wn (startx,endx)
+	else
+		startx=0
+		FindAPeak threshold,2,3,$wn
+	endif
 	peakx=V_peakX
 	peakValue=wwn[V_peakP]
 	print "peak found at ", peakx,peakvalue,V_peakP
-	Cursor A,$wn,V_peakX
+	if(withCursor!=1)
+		Cursor A,$wn,V_peakX
+	endif
 	//
-	level=peakValue*0.2
-	FindLevel/R=[0,V_peakP],$wn,level
+	level=peakValue*percentheight
+	FindLevel/R=[startx0,V_peakP],$wn,level
 //	print peakx-V_levelX
-	Cursor B,$wn,V_levelX
+	if(withCursor!=1)
+		Cursor B,$wn,V_levelX
+	endif
 	return(peakx-V_levelX)
 End
 
-Macro CalcDelayonGraph(grname,destwv,threshold)
+Macro CalcDelayonGraph(grname,destwv,threshold,withCursor)
 	String grname,destwv
-	Variable threshold=-0.1
+	Variable threshold=-0.1,withCursor=1
 	Prompt grname,"Graph name",popup,WinList("*", ";","WIN:1")
+	Prompt withCursor,"use cursor",popup,"yes;no"
 	PauseUpdate; Silent 1
 	
-	FCalcDelayonGraph(grname,destwv,threshold)
+	FCalcDelayonGraph(grname,destwv,threshold,withCursor)
 End
 
-Function FCalcDelayonGraph(grname,destwv,threshold)
+Function FCalcDelayonGraph(grname,destwv,threshold,withCursor)
 	String grname,destwv
-	Variable threshold
+	Variable threshold,withCursor
 
 	Variable nwv,index
+	Variable startX,endX
 	String trname,trnames
 	trnames=TraceNameList(grname,";",1)
 	nwv = itemsinlist(trnames)
 	Make/N=(nwv)/D/O $destwv
 	Wave wvdest=$destwv
+
 	do
 		trname=NameOfWave(TraceNameToWaveRef(grname,StringFromList(index,trnames,";")))
-		wvdest[index]=FCalculateDelay(trname,threshold)
+		wvdest[index]=FCalculateDelay(trname,threshold,withCursor)
 		index+=1
 	while(index<	nwv)
 End
@@ -443,40 +463,44 @@ Function FFindLevelOnGraph(grname,destwv,level)
 	while(index<	nwv)
 End
 
-Macro LoadTekDataFile(wvname,filename,pathname,prefix)
+Macro LoadTekDataFile(wvname,filename,pathname,prefix,ncols)
 	String wvname,filename,pathName,prefix
+	Variable ncols
 	PauseUpdate; Silent 1
 
-	FLoadTekDataFile(wvname,filename,pathname,prefix)
+	FLoadTekDatFile(wvname,filename,pathname,prefix,ncols)
 End
 
-Macro MultiLoadTekDataFile(thePath,nmschm,prefix,dsetnm,wantToPrint)
+Macro MultiLoadTekDataFile(thePath,nmschm,prefix,ncols,fdso,dsetnm,wantToPrint)
 	String thePath="_New Path_",prefix="T",dsetnm="data"
-	Variable nmschm=2
-	Variable wantToPrint=2
+	Variable nmschm=2,ncols=0
+	Variable wantToPrint=2,fdso=1
 	Prompt thePath, "Name of path containing text files", popup PathList("*", ";", "")+"_New Path_"
 	Prompt nmschm,"wave naming scheme"
 	Prompt prefix,"wavename prefix"
+	Prompt ncols,"number of column in each data"
+	Prompt fdso,"create Datatset",popup,"yes;yes(per file);no"
 	Prompt dsetnm, "prefix for dataset name"
 	Prompt wantToPrint, "Do you want to print graphs?", popup, "Yes;No"
 	PauseUpdate; Silent 1
 
-	FMultiLoadTekDatFile(thePath,nmschm,prefix,dsetnm,wantToPrint)
+	FMultiLoadTekDatFile(thePath,nmschm,prefix,ncols,fdso,dsetnm,wantToPrint)
 End
 
-Function  FMultiLoadTekDatFile(thePath,nmschm,prefix,dsetnm,wantToPrint)
+Function  FMultiLoadTekDatFile(thePath,nmschm,prefix,ncols,fdso,dsetnm,wantToPrint)
 	String thePath,prefix,dsetnm
-	Variable nmschm
-	Variable wantToPrint
+	Variable nmschm,ncols
+	Variable wantToPrint,fdso
 	
 	Variable/G g_DSOindex
 	Variable/G g_nwv
-	// create data set
-	FDSOinit0(dsetnm)
-	DSOCreate0(0,1)
-	dsetnm=dsetnm+num2istr(g_DSOindex-1)
-	Wave/T wdsetnm=$dsetnm
-	
+	if(fdso==1 || fdso==2)
+		// create data set
+		FDSOinit0(dsetnm)
+		DSOCreate0(0,1)
+		dsetnm=dsetnm+num2istr(g_DSOindex-1)
+		Wave/T wdsetnm=$dsetnm
+	endif
 	if(nmschm==0)
 		Make/T/N=1/O tmpnm
 	endif
@@ -517,7 +541,7 @@ Function  FMultiLoadTekDatFile(thePath,nmschm,prefix,dsetnm,wantToPrint)
 				name=prefix+nametmp[wnlength-nmschm,wnlength-1]
 				print fileName
 			endif
-			wvname=FLoadTekDatFile(name,filename,thePath,"")
+			wvname=FLoadTekDatFile(name,filename,thePath,"",ncols)
 			if(g_nwv>=2)
 				if(nmschm==0)
 					Redimension/N=(fileIndex+nmschm) tmpnm
@@ -562,10 +586,11 @@ Function  FMultiLoadTekDatFile(thePath,nmschm,prefix,dsetnm,wantToPrint)
 	Endif
 End
 
-Function/S FLoadTekDatFile(wvname,filename,pathname,prefix)
+Function/S FLoadTekDatFile(wvname,filename,pathname,prefix,ncols)
 	String wvname,filename,pathName,prefix
+	Variable ncols
 	
-	Variable ref,t0,dt,skips,len,nwv,npt
+	Variable ref,t0,dt,skips,len,nwv,npt,nwv2
 	NVAR g_nwv
 	String buffer,buf2,w0,wvname2
 	
@@ -577,11 +602,19 @@ Function/S FLoadTekDatFile(wvname,filename,pathname,prefix)
 
 //	read all the waves first
 	skips=1
-	LoadWave/G/D/N=dummywave/L={0,(skips),0,0,0}/P=$pathName filename
+//	ncols=2
+	print filename
+	LoadWave/G/D/N=dummywave/L={0,(skips),0,0,ncols}/P=$pathName filename
 	if(V_flag==0)
 		return ""
 	endif
-	nwv=ItemsInList(S_wavenames)
+//	nwv=ItemsInList(S_wavenames)
+	nwv=V_Flag
+	if(ncols==0)
+		nwv2=nwv
+	else
+		nwv2=nwv/ncols
+	endif
 	
 	if (strlen(wvname)<1)
 		wvname=prefix+wname(fileName)
@@ -636,10 +669,43 @@ Function/S FLoadTekDatFile(wvname,filename,pathname,prefix)
 	
 //	w0 = StringFromList(0,S_waveNames,";")
 //	Duplicate/O $w0,$wvname2
-
-		index+=1
+		if(ncols==0)
+			index+=1
+		else
+			index+=ncols
+		endif
 	while(1)
 	Close ref
 	g_nwv=nwv
 	return wvname
+End
+
+Function FFindZeroCrossingAfterPeak(wn,threshold,xpos)
+	String wn
+	Variable threshold,xpos
+	
+	Variable endx=DimOffset($wn,0)+DimDelta($wn,0)*(DimSize($wn,0)-1)
+	FindPeak/M=(threshold)/Q/N/R=(xpos,endx) $wn
+	Variable startx=V_PeakLoc,val
+	
+	FindLevel/Q/R=(startX,endX),$wn,0
+	val=V_LevelX
+	return(val)
+End
+
+Function FFindZeroCrossingonGraph(grname,destwv,threshold,xpos)
+	String grname,destwv
+	Variable threshold,xpos
+
+	Variable nwv,index
+	String trname,trnames
+	trnames=TraceNameList(grname,";",1)
+	nwv = itemsinlist(trnames)
+	Make/N=(nwv)/D/O $destwv
+	Wave wvdest=$destwv
+	do
+		trname=NameOfWave(TraceNameToWaveRef(grname,StringFromList(index,trnames,";")))
+		wvdest[index]=FFindZeroCrossingAfterPeak(trname,threshold,xpos)
+		index+=1
+	while(index<nwv)
 End
