@@ -12,24 +12,31 @@
 //		16/04/06	ver 0.02	dataset
 //		16/02/22	ver 0.01	first version
 
-Macro  MultiMCALoad(thePath,nmschm,prefix,dsetnm,flag,len,timediv,wantToPrint)
+Macro  MultiMCALoad(thePath,nmschm,prefix,dsetnm,flag,len,timediv,ftype0,wantToPrint)
 	String thePath="_New Path_",prefix="C",dsetnm="data"
 	Variable nmschm=2
-	Variable len=8192,flag=2,timediv=1e-12
+	Variable len=8192,flag=2,timediv=1e-12,ftype=1
 	Variable wantToPrint=2
 	Prompt thePath, "Name of path containing text files", popup PathList("*", ";", "")+"_New Path_"
 	Prompt nmschm,"wave naming scheme"
 	Prompt prefix,"wavename prefix"
 	Prompt dsetnm, "prefix for dataset name"
 	Prompt flag,"swap channel ?",popup,"no;yes"
+	Prompt ftype,"file type ?",popup,"mca;dat"
 	Prompt wantToPrint, "Do you want to print graphs?", popup, "Yes;No"
 	PauseUpdate; Silent 1
 	
+	String ftype
+	if(ftype0==1)
+		ftype=".mca"
+	else
+		ftype=".dat"
+	endif
 	FMultiMCALoad(thePath,nmschm,prefix,dsetnm,flag,len,timediv,wantToPrint)
 End
 
-Function FMultiMCALoad(thePath,nmschm,prefix,dsetnm,flag,len,timediv,wantToPrint)
-	String thePath,prefix,dsetnm
+Function FMultiMCALoad(thePath,nmschm,prefix,dsetnm,flag,len,timediv,ftype,wantToPrint)
+	String thePath,prefix,dsetnm,ftype
 	Variable nmschm
 	Variable len,flag,timediv
 	Variable wantToPrint
@@ -46,7 +53,8 @@ Function FMultiMCALoad(thePath,nmschm,prefix,dsetnm,flag,len,timediv,wantToPrint
 		Make/T/N=1/O tmpnm
 	endif
 
-	String ftype=".mca"
+//	String ftype=".mca"
+//	String ftype=".dat"
 	String fileName
 	Variable fileIndex=0, gotFile
 	String wvname
@@ -85,7 +93,11 @@ Function FMultiMCALoad(thePath,nmschm,prefix,dsetnm,flag,len,timediv,wantToPrint
 				print fileName
 			endif
 			name0=name+"_0"
-			wvname=FReadMCA8000D(fileName,thePath,"",flag,len,timediv)
+			if(cmpstr(ftype,".mca"))
+				wvname=FReadMCA8000D(fileName,thePath,"",flag,len,timediv)
+			else
+				wvname=FloadMCAdat(fileName,thePath,"",flag,len,timediv)
+			endif
 			Duplicate/O $wvname,$name0
 			//LoadWave/G/P=$thePath/O/N=wave fileName		// load the waves from file
 			Textbox/C/N=tb_file/F=0/A=MT/X=-30/Y=5 "File: "+fileName
@@ -169,7 +181,7 @@ Function/S FReadMCA8000D(fileName,pathName,wvName,flag,len,timediv)
 	Variable len,flag,timediv
 
 	if (strlen(fileName)<=0)
-		Open /D/R/P=$pathName/T=".mca.MCA" ref
+		Open /D/R/P=$pathName/T=".mca" ref
 		fileName= S_fileName
 	endif
 	print fileName
@@ -188,6 +200,35 @@ Function/S FReadMCA8000D(fileName,pathName,wvName,flag,len,timediv)
 		tmpwave = -x
 		Sort tmpwave tmpwave,dummywave0
 		KillWaves/Z tmpwave
+	endif
+	Duplicate/O dummywave0,$wvName
+	Return wvName
+End
+
+Function/S FloadMCAdat(fileName,pathName,wvName,flag,len,timediv)
+	String fileName,pathName,wvName
+	Variable len,flag,timediv
+
+	if (strlen(fileName)<=0)
+		Open /D/R/P=$pathName/T=".dat" ref
+		fileName= S_fileName
+	endif
+	print fileName
+
+	if (strlen(wvName)<1)
+		wvName="C"+wname(fileName)
+	endif
+
+//	LoadWave /N=dummywave/P=$pathName /B=columnInfoStr /C /D /E=editCmd  /F={...} /G /H /J /K=k  /L={...} /M /O   /Q/ /T /U={...} /V={...} /W] fileName
+	LoadWave /N=dummywave/P=$pathName/J/D/K=0 filename
+
+	Wave dummywave0
+	if(timediv>0)
+		SetScale/P x,0,timediv,"s"
+	endif
+// swap
+	if(flag==2)
+		Reverse dummywave0
 	endif
 	Duplicate/O dummywave0,$wvName
 	Return wvName

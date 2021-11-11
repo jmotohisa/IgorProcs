@@ -1,35 +1,42 @@
-#include <Strings as Lists>
 #include "wname"
 #include "GraphPlot"
+#include "XYToWave2"
 
 // Macro to load PL data taken by VEE programs
 //      PLtest.vee, PL1-2, etc...
 //
-Macro LoadPLdata(fileName,pathName,waveName,flag,flag2)
-	String fileName, pathName="home", waveName
+Macro LoadPLdata(fileName,pathName,wvnamey,flag,flag2)
+	String fileName, pathName="home", wvname
 	Variable flag=2,flag2=1;
 	Prompt flag,"channel y data ?",popup,"yes;yes_but_skip;no"
 	Prompt flag2,"equal wavelength spacing ?", popup,"yes;intepolate;no"
-
 	Silent 1; PauseUpDate
+	
+	FLoadPLdata(fileName,pathName,wvnamey,flag,flag2)
+EndMacro
 
-	String w0,w1,w2,wavenameL
+Function/T FLoadPLdata(fileName,pathName,wvnamey,flag,flag2)
+	String fileName, pathName, wvnamey
+	Variable flag,flag2;
+
+	String w0,w1,w2,wvnameyL
 	Variable ref,numpoints
+	String retstr=""
 	
 	if (strlen(fileName)<=0)
-		Open /D/R/P=$pathName/T="sGBWTEXT" ref
+		Open /D/R/P=$pathName/T=".dat" ref
 		fileName= S_fileName
 	endif
 	
 	LoadWave/G/D/A/W/P=$pathName fileName
 	if(V_flag==0)
-		return
+		return(retstr) 
 	endif
 	
-	w0 = GetStrFromList(S_waveNames,0,";")	// wavelength
-	w1 = GetStrFromList(S_waveNames,1,";")	// channel x
+	w0 = StringFromList(0,S_waveNames,";")	// wavelength
+	w1 = StringFromList(1,S_waveNames,";")	// channel x
 	if (flag != 3)
-		w2 = GetStrFromList(S_waveNames,2,";")	| channel y (only for LIA detection)
+		w2 = StringFromList(2,S_waveNames,";")	// channel y (only for LIA detection)
 	endif
 	if(flag == 2)
 		KillWaves $w2
@@ -47,134 +54,151 @@ Macro LoadPLdata(fileName,pathName,waveName,flag,flag2)
 	
 	if(flag2==1)
 		KillWaves $w0
-	else if(flag2=2)
-		numpoints = numpnts($w0)
-		if(flag==1)
-			XYtoWave2($w0,$w1,"tempx",numpoints)
-			XYtoWave2($w0,$w2,"tempy",numpoints)
-			KillWaves $w0,$w1,$w2
-			Rename $"tempx",$w1
-			Rename $"tempy",$w2
-		else
-			XYtoWave2($w0,$w1,"tempx",numpoints)
-			KillWaves $w0,$w1,$w2
-			Rename $"tempx",$w1
+	else
+		if(flag2==2)
+			numpoints = numpnts($w0)
+			if(flag==1)
+				XYtoWave2($w0,$w1,"tempx",numpoints)
+				XYtoWave2($w0,$w2,"tempy",numpoints)
+				KillWaves $w0,$w1,$w2
+				Rename $"tempx",$w1
+				Rename $"tempy",$w2
+			else
+				XYtoWave2($w0,$w1,"tempx",numpoints)
+				KillWaves $w0,$w1,$w2
+				Rename $"tempx",$w1
+			endif
 		endif
 	endif
 
-	waveNameL="L"+waveName
-	if (strlen(waveName)<1)
-		waveName="W"+wname(fileName)
-		waveNameL="L"+wname(fileName)
+	wvnameyL="L"+wvnamey
+	retstr=wvnameyL
+	if (strlen(wvnamey)<1)
+		wvnamey="W"+wname(fileName)
+		wvnameyL="L"+wname(fileName)
+		retstr=wvnamey
 	endif
 
-	print waveName
+	print wvnamey
 	if(flag==1)
-		w0=waveName+"_y"
-		waveName = waveName + "_x"
-		Rename $w1,$waveName
+		w0=wvnamey+"_y"
+		wvnamey = wvnamey + "_x"
+		Rename $w1,$wvnamey
 		Rename $w2,$w0
 	else
-		Rename $w1,$waveName
+		Rename $w1,$wvnamey
 	endif
 	
-	Duplicate/O $waveName,dummywave0
+	Duplicate/O $wvnamey,dummywave0
 	if(flag2==2)
-		Duplicate/O $waveName,dummyxwave
-		Duplicate/O $waveNameL,dummyywave		
+		Duplicate/O $wvnamey,dummyxwave
+		Duplicate/O $wvnameyL,dummyywave		
 	endif
-End Macro
+	
+	return(retstr)
+End
 
 Macro MultiPLdataLoad(thePath, wantToPrint,flag,flag2)
 	String thePath="_New Path_"
-	Prompt thePath, "Name of path containing text files", popup PathList("*", ";", "")+"_New Path_"
 	Variable wantToPrint=2
-	Prompt wantToPrint, "Do you want to print graphs?", popup, "Yes;No"
 	Variable flag=2,flag2=1
+	Prompt thePath, "Name of path containing text files", popup, PathList("*", ";", "")+"_New Path_"
+	Prompt wantToPrint, "Do you want to print graphs?", popup, "Yes;No"
 	Prompt flag,"channel y data ?",popup,"yes;yes_but_skip;no"
 	Prompt flag2,"equal wavelength spacing ?", popup,"yes;intepolate;no"
-|	String ftype="sGBW"
-	String ftype="TEXT"
-	|Prompt ftype,"Filetype"
+	PauseUpdate;Silent 1
 	
-	Silent 1
-	
+	FMultiPLdataLoad(thePath, wantToPrint,flag,flag2)
+EndMacro
+
+Function FMultiPLdataLoad(thePath, wantToPrint,flag,flag2)
+	String thePath
+	Variable wantToPrint,flag,flag2
+
+	String ftype=".dat"
 	String fileName
 	Variable fileIndex=0, gotFile
 	
-	if (CmpStr(thePath, "_New Path_") == 0)		| user selected new path ?
-		NewPath/O data			| this brings up dialog and creates or overwrites path
+	if (CmpStr(thePath, "_New Path_") == 0)		// user selected new path ?
+		NewPath/O data			// this brings up dialog and creates or overwrites path
 		thePath = "data"
 	endif
 	
 	if(flag2==2)
-		DoWindow /F Graphplotxy							| make sure Graphplot is front window
-		if (V_flag == 0)								| Graphplot does not exist?
+		DoWindow /F Graphplotxy							// make sure Graphplot is front window
+		if (V_flag == 0)								// Graphplot does not exist?
 			Make/N=2/D/O dummyxwave0
 			Make/N=2/D/O dummyywave0
-			Graphplotxy()									| create it
+			FGraphplotxy("wavelength","intensity")									// create it
 		endif
 	else
-		DoWindow /F Graphplot							| make sure Graphplot is front window
-		if (V_flag == 0)								| Graphplot does not exist?
+		DoWindow /F Graphplot							// make sure Graphplot is front window
+		if (V_flag == 0)								// Graphplot does not exist?
 			Make/N=2/D/O dummywave0
-			Graphplot()									| create it
+			FGraphplot("wavelength","intensity")									// create it
 		endif
 	endif
 
 	do
-		fileName = IndexedFile($thePath,fileIndex,ftype)			| get name of next file in path
+		fileName = IndexedFile($thePath,fileIndex,ftype)			// get name of next file in path
 		gotFile = CmpStr(fileName, "")
 		if (gotFile)
-			LoadPLdata(fileName,thePath,"",flag,flag2)
-			|LoadWave/G/P=$thePath/O/N=wave fileName		| load the waves from file
+			FLoadPLdata(fileName,thePath,"",flag,flag2)
+			//LoadWave/G/P=$thePath/O/N=wave fileName		// load the waves from file
 			Textbox/C/N=tb_file/F=0/A=MT/X=-30/Y=5 "File: "+fileName
-			DoUpdate		| make sure graph updated before printing
+			DoUpdate		// make sure graph updated before printing
 			if (wantToPrint == 1)
-				PrintGraphs/R Graphplot(2, 2, 98, 98)/F=1	| print graph
+				Execute("PrintGraphs/R Graphplot(2, 2, 98, 98)/F=1")	// print graph
 			endif
 		endif
 		fileIndex += 1
-	while (gotFile)									| until TextFile runs out of files
-EndMacro
+	while (gotFile)									// until TextFile runs out of files
+End
 
-| Macro to load PL data taken by spectramax program 
-|      (SPC file with extention of "SPC")
-|
+// Macro to load PL data taken by spectramax program 
+//      (SPC file with extention of "SPC")
 
 Macro SPCload(name,file,path)
 	String name,file
 	String path="home"
 	PauseUpdate; Silent 1
+	
+	FSPCload(name,file,path)
+EndMacro
+
+Function FSPCload(name,file,path)
+	String name,file
+	String path
+	
 	Variable /D ref,lhead,lblock,npoint,offreg,xmin,xmax,dx,skip,fnsub,fexp
 	String xname
 
 	if (strlen(file)<=0)
-		Open /D/R/P=$path/T="sGBWTEXT" ref
+		Open /D/R/P=$path/T=".spc" ref
 		file= S_fileName
 	endif
 	print file
-	Open /R/P=$path/T="sGBWTEXT" ref as file
+	Open /R/P=$path/T=".spc" ref as file
 	FsetPos ref,4
-	FBinRead /B/F=3 ref,npoint
+	FBinRead /B=3/F=3 ref,npoint
 	FsetPos ref,8
-	FBinRead /B/F=5 ref,xmin
+	FBinRead /B=3/F=5 ref,xmin
 	FsetPos ref,16
-	FBinRead /B/F=5 ref,xmax
+	FBinRead /B=3/F=5 ref,xmax
 	FsetPos ref,24
-	FBinRead /B/F=3 ref,fnsub
+	FBinRead /B=3/F=3 ref,fnsub
 	skip = 512 + npoint*4+1
 	FsetPos ref,skip
-	FBinRead /B/F=1 ref,fexp
+	FBinRead /B=3/F=1 ref,fexp
 	Close ref
 
 	dx=(xmax-xmin)/(npoint-1)
-|	print npoint,xmin,xmax,dx,fexp
+//	print npoint,xmin,xmax,dx,fexp
 
 	skip=512
-	GBLoadWave /N=$"dummyxwave"/T={2,2}/B/U=(npoint)/S=(skip)/W=1/P=$path file
+	GBLoadWave /N=$"dummyxwave"/T={2,2}/B=3/U=(npoint)/S=(skip)/W=1/P=$path file
 	skip=512+npoint*4+32
-	GBLoadWave /N=$"dummyywave"/T={32,2}/B/U=(npoint)/S=(skip)/W=1/Y={0,2^(fexp-32)}/P=$path file
+	GBLoadWave /N=$"dummyywave"/T={32,2}/B=3/U=(npoint)/S=(skip)/W=1/Y={0,2^(fexp-32)}/P=$path file
 	if (strlen(name)<1)
 		name="W"+wname(file)
 		xname="L"+wname(file)
@@ -191,59 +215,72 @@ Macro MultiSPCLoad(thePath, wantToPrint,flag)
 	Prompt wantToPrint, "Do you want to print graphs?", popup, "Yes;No"
 	Variable flag=1
 	Prompt flag,"swap wavelength ?",popup,"no;yes"
-|	String ftype="sGBW"
-	String ftype="TEXT"
-	|Prompt ftype,"Filetype"
+	String ftype=".spc"
+	PauseUpdate;	Silent 1
+
+	FMultiSPCLoad(thePath, wantToPrint,flag)
+Endmacro
+
+Function FMultiSPCLoad(thePath, wantToPrint,flag)
+	String thePath
+	Variable wantToPrint
+	Variable flag
 	
-	Silent 1
-	
+	String ftype=".spc"
 	String fileName
 	Variable fileIndex=0, gotFile
 	
-	if (CmpStr(thePath, "_New Path_") == 0)		| user selected new path ?
-		NewPath/O data			| this brings up dialog and creates or overwrites path
+	if (CmpStr(thePath, "_New Path_") == 0)		// user selected new path ?
+		NewPath/O data			// this brings up dialog and creates or overwrites path
 		thePath = "data"
 	endif
 	
-	DoWindow /F Graphplotxy							| make sure Graphplot is front window
-	if (V_flag == 0)								| Graphplot does not exist?
+	DoWindow /F Graphplotxy							// make sure Graphplot is front window
+	if (V_flag == 0)								// Graphplot does not exist?
 		Make/N=2/D/O dummyxwave0
 		Make/N=2/D/O dummyywave0
-		Graphplotxy()									| create it
+		FGraphplotxy("wavelength","count")									// create it
 	endif
 	
 	do
-		fileName = IndexedFile($thePath,fileIndex,ftype)			| get name of next file in path
+		fileName = IndexedFile($thePath,fileIndex,ftype)			// get name of next file in path
 		gotFile = CmpStr(fileName, "")
 		if (gotFile)
-			SPCload("",fileName,thePath)
-			|LoadWave/G/P=$thePath/O/N=wave fileName		| load the waves from file
+			FSPCload("",fileName,thePath)
+			//LoadWave/G/P=$thePath/O/N=wave fileName		// load the waves from file
 			Textbox/C/N=tb_file/F=0/A=MT/X=-30/Y=5 "File: "+fileName
-			DoUpdate		| make sure graph updated before printing
+			DoUpdate		// make sure graph updated before printing
 			if (wantToPrint == 1)
-				PrintGraphs/R Graphplot(2, 2, 98, 98)/F=1	| print graph
+				Execute("PrintGraphs/R Graphplot(2, 2, 98, 98)/F=1")	// print graph
 			endif
 		endif
 		fileIndex += 1
-	while (gotFile)									| until TextFile runs out of files
-EndMacro
+	while (gotFile)									// until TextFile runs out of files
+End
 
-| Macro to load PL data taken by spectramax program 
-|      (converted ascii file, with extention of "PRN")
-|
+// Macro to load PL data taken by spectramax program 
+//      (converted ascii file, with extention of "PRN")
+//
 
-Macro LoadPRNfileData(waveName,fileName,pathName,flag)
-	String fileName, pathName="home", waveName
+Macro LoadPRNfileData(wvnamey,fileName,pathName,flag)
+	String fileName, pathName="home", wvnamey
 	Variable flag=1
 	Prompt flag,"swap wavelength ?",popup,"no;yes"
 
 	Silent 1; PauseUpDate
+	FLoadPRNfileData(wvnamey,fileName,pathName,flag)
+EndMacro
+
+Function/T FLoadPRNfileData(wvnamey,fileName,pathName,flag)
+	String fileName, pathName, wvnamey
+	Variable flag
 
 	String w0,w1
 	Variable ref
+	String retstr=""
 	
 	if (strlen(fileName)<=0)
-		Open /D/R/P=$pathName/T="sGBWTEXT" ref
+		Open /D/R/P=$pathName/T=".PRN" ref
 		fileName= S_fileName
 	endif
 	
@@ -251,13 +288,13 @@ Macro LoadPRNfileData(waveName,fileName,pathName,flag)
 	
 	LoadWave/G/D/A/W/P=$pathName fileName
 	if(V_flag==0)
-		return
+		return(retstr)
 	endif
 	
-	w0 = GetStrFromList(S_waveNames,0,";")
-	w1 = GetStrFromList(S_waveNames,1,";")
+	w0 = StringFromList(0,S_waveNames,";")
+	w1 = StringFromList(1,S_waveNames,";")
 
-	if(flag==2) then
+	if(flag==2)
 		Sort/R $w0,$w0,$w1
 		Print "Data is swaped !!"
 	else
@@ -269,15 +306,16 @@ Macro LoadPRNfileData(waveName,fileName,pathName,flag)
 	KillWaves $w0
 
 
-	if (strlen(waveName)<1)
-		waveName="W"+wname(fileName)
+	if (strlen(wvnamey)<1)
+		wvnamey="W"+wname(fileName)
 	endif
 	
-	Rename $w1,$waveName
+	Rename $w1,$wvnamey
 
-	Duplicate/O $waveName,dummywave0
-|	Display dummywave0
-End Macro
+	Duplicate/O $wvnamey,dummywave0
+//	Display dummywave0
+	return(retstr)
+End
 
 Macro MultiPRNfileLoad(thePath, wantToPrint,flag)
 	String thePath="_New Path_"
@@ -286,39 +324,45 @@ Macro MultiPRNfileLoad(thePath, wantToPrint,flag)
 	Prompt wantToPrint, "Do you want to print graphs?", popup, "Yes;No"
 	Variable flag=1
 	Prompt flag,"swap wavelength ?",popup,"no;yes"
-|	String ftype="sGBW"
-	String ftype="TEXT"
-	|Prompt ftype,"Filetype"
+	String ftype=".PRN"
 	
-	Silent 1
+	PauseUpdate;Silent 1
+
+	FMultiPRNfileLoad(thePath, wantToPrint,flag)
+End Macro
+
+Function FMultiPRNfileLoad(thePath, wantToPrint,flag)
+	String thePath
+	Variable wantToPrint
+	Variable flag
 	
+	String ftype=".PRN"
 	String fileName
 	Variable fileIndex=0, gotFile
 	
-	if (CmpStr(thePath, "_New Path_") == 0)		| user selected new path ?
-		NewPath/O data			| this brings up dialog and creates or overwrites path
+	if (CmpStr(thePath, "_New Path_") == 0)		// user selected new path ?
+		NewPath/O data			// this brings up dialog and creates or overwrites path
 		thePath = "data"
 	endif
 	
-	DoWindow /F Graphplot							| make sure Graphplot is front window
-	if (V_flag == 0)								| Graphplot does not exist?
+	DoWindow /F Graphplot							// make sure Graphplot is front window
+	if (V_flag == 0)								// Graphplot does not exist?
 		Make/N=2/D/O dummywave0
-		Graphplot()									| create it
+		FGraphplot("wavelength","counts")									// create it
 	endif
 	
 	do
-		fileName = IndexedFile($thePath,fileIndex,ftype)			| get name of next file in path
+		fileName = IndexedFile($thePath,fileIndex,ftype)			// get name of next file in path
 		gotFile = CmpStr(fileName, "")
 		if (gotFile)
-			 LoadPRNFileData("",fileName,thePath,flag)
-			|LoadWave/G/P=$thePath/O/N=wave fileName		| load the waves from file
+			 FLoadPRNFileData("",fileName,thePath,flag)
+			//LoadWave/G/P=$thePath/O/N=wave fileName		// load the waves from file
 			Textbox/C/N=tb_file/F=0/A=MT/X=-30/Y=5 "File: "+fileName
-			DoUpdate		| make sure graph updated before printing
+			DoUpdate		// make sure graph updated before printing
 			if (wantToPrint == 1)
-				PrintGraphs/R Graphplot(2, 2, 98, 98)/F=1	| print graph
+				Execute("PrintGraphs/R Graphplot(2, 2, 98, 98)/F=1")	// print graph
 			endif
 		endif
 		fileIndex += 1
-	while (gotFile)									| until TextFile runs out of files
-EndMacro
-
+	while (gotFile)									// until TextFile runs out of files
+End
