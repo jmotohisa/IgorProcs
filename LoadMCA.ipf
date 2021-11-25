@@ -15,14 +15,14 @@
 Macro  MultiMCALoad(thePath,nmschm,prefix,dsetnm,flag,len,timediv,ftype0,wantToPrint)
 	String thePath="_New Path_",prefix="C",dsetnm="data"
 	Variable nmschm=2
-	Variable len=8192,flag=2,timediv=1e-12,ftype=1
+	Variable len=8192,flag=2,timediv=1e-12,ftype0=1
 	Variable wantToPrint=2
 	Prompt thePath, "Name of path containing text files", popup PathList("*", ";", "")+"_New Path_"
 	Prompt nmschm,"wave naming scheme"
 	Prompt prefix,"wavename prefix"
 	Prompt dsetnm, "prefix for dataset name"
 	Prompt flag,"swap channel ?",popup,"no;yes"
-	Prompt ftype,"file type ?",popup,"mca;dat"
+	Prompt ftype0,"file type ?",popup,"mca;dat"
 	Prompt wantToPrint, "Do you want to print graphs?", popup, "Yes;No"
 	PauseUpdate; Silent 1
 	
@@ -32,7 +32,7 @@ Macro  MultiMCALoad(thePath,nmschm,prefix,dsetnm,flag,len,timediv,ftype0,wantToP
 	else
 		ftype=".dat"
 	endif
-	FMultiMCALoad(thePath,nmschm,prefix,dsetnm,flag,len,timediv,wantToPrint)
+	FMultiMCALoad(thePath,nmschm,prefix,dsetnm,flag,len,timediv,ftype,wantToPrint)
 End
 
 Function FMultiMCALoad(thePath,nmschm,prefix,dsetnm,flag,len,timediv,ftype,wantToPrint)

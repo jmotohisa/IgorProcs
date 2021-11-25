@@ -8,7 +8,8 @@ Menu "Macros"
 	"Display Pickup Results/3",DispPickup()
 	"-"
 End
-Macro DefineGrobal_PickupCsrPt()
+
+Macro DefineGrobal_PickUpCrsPt()
 	String/G g_graphname, g_ywave,g_xwave,g_destwx,g_destwy
 	Variable/G g_numpoints
 End Macro
@@ -60,7 +61,7 @@ Macro DispPickup()
 	ModifyGraph mode=3,marker=19
 End
 
-Function/s xWaveOfTrace(graphname,ywave,instance) | return x-wave name of the trace
+Function/s xWaveOfTrace(graphname,ywave,instance) // return x-wave name of the trace
 	String graphname,ywave
 	Variable instance
 	
