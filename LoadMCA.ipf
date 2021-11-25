@@ -15,7 +15,7 @@
 Macro  MultiMCALoad(thePath,nmschm,prefix,dsetnm,flag,len,timediv,ftype0,wantToPrint)
 	String thePath="_New Path_",prefix="C",dsetnm="data"
 	Variable nmschm=2
-	Variable len=8192,flag=2,timediv=1e-12,ftype0=1
+	Variable len=8192,flag=2,timediv=6.5e-13,ftype0=1
 	Variable wantToPrint=2
 	Prompt thePath, "Name of path containing text files", popup PathList("*", ";", "")+"_New Path_"
 	Prompt nmschm,"wave naming scheme"
@@ -122,7 +122,7 @@ End
 Proc MultiMCALoad0(thePath,flag,len,timediv,wantToPrint) //original version, does not use dataset
 	String thePath="_New Path_"
 	Prompt thePath, "Name of path containing text files", popup PathList("*", ";", "")+"_New Path_"
-	Variable len=8192,flag=2,timediv=1e-12
+	Variable len=8192,flag=2,timediv=6.5e-13
 	Variable wantToPrint=2
 	PauseUpdate;Silent 1
 	FMultiMCALoad0(thePath,flag,len,timediv,wantToPrint) 
@@ -169,7 +169,7 @@ EndMacro
 
 Macro ReadMCA8000D(fileName,pathName,wvName,flag,len,timediv)
 	String fileName,pathName="home",wvName
-	Variable len=8192,flag=2,timediv=1e-12
+	Variable len=8192,flag=2,timediv=6.5e-13
 	Prompt flag,"swap channel ?",popup,"no;yes"
 	Silent 1; PauseUpDate
 	
@@ -196,10 +196,10 @@ Function/S FReadMCA8000D(fileName,pathName,wvName,flag,len,timediv)
 	Wave dummywave0
 // swap
 	if(flag==2)
-		Duplicate/O dummywave0,tmpwave
-		tmpwave = -x
-		Sort tmpwave tmpwave,dummywave0
-		KillWaves/Z tmpwave
+		Reverse dummywave0
+	endif
+	if(timediv>0)
+		SetScale/P x,0,timediv,"s",dummywave0
 	endif
 	Duplicate/O dummywave0,$wvName
 	Return wvName
@@ -223,12 +223,12 @@ Function/S FloadMCAdat(fileName,pathName,wvName,flag,len,timediv)
 	LoadWave /N=dummywave/P=$pathName/J/D/K=0 filename
 
 	Wave dummywave0
-	if(timediv>0)
-		SetScale/P x,0,timediv,"s"
-	endif
 // swap
 	if(flag==2)
 		Reverse dummywave0
+	endif
+	if(timediv>0)
+		SetScale/P x,0,timediv,"s",dummywave0
 	endif
 	Duplicate/O dummywave0,$wvName
 	Return wvName
