@@ -1,10 +1,15 @@
 #include "wname"
 #include "GraphPlot"
 #include "XYToWave2"
+#include "DataSetOperations"
 
 // Macro to load PL data taken by VEE programs
 //      PLtest.vee, PL1-2, etc...
 //
+//		??/??/?? : first version ???
+//		21/11/10 ver 0.2 : some updates
+//		21/11/25 ver 0.2 : modified to work with DSO (SPC only)
+ 
 Macro LoadPLdata(fileName,pathName,wvnamey,flag,flag2)
 	String fileName, pathName="home", wvname
 	Variable flag=2,flag2=1;
@@ -208,28 +213,102 @@ Function FSPCload(name,file,path)
 	duplicate /O dummyxwave0,$xname
 End
 
-Macro MultiSPCLoad(thePath, wantToPrint,flag)
-	String thePath="_New Path_"
-	Prompt thePath, "Name of path containing text files", popup PathList("*", ";", "")+"_New Path_"
-	Variable wantToPrint=2
-	Prompt wantToPrint, "Do you want to print graphs?", popup, "Yes;No"
+Function FSPCload2(name,fileName,thePath,expnml,nmschm,which)
+	String name,fileName
+	String thePath,which
+	Variable expnml,nmschm
+		
+	Variable /D ref,lhead,lblock,npoint,offreg,xmin,xmax,dx,skip,fnsub,fexp
+	Variable wnlength
+	String xname,tmpname,tmpname2
+
+	if (strlen(fileName)<=0)
+		Open /D/R/P=$thePath/T=".spc" ref
+		fileName= S_fileName
+	endif
+	print fileName
+	Open /R/P=$thePath/T=".spc" ref as fileName
+	FsetPos ref,4
+	FBinRead /B=3/F=3 ref,npoint
+	FsetPos ref,8
+	FBinRead /B=3/F=5 ref,xmin
+	FsetPos ref,16
+	FBinRead /B=3/F=5 ref,xmax
+	FsetPos ref,24
+	FBinRead /B=3/F=3 ref,fnsub
+	skip = 512 + npoint*4+1
+	FsetPos ref,skip
+	FBinRead /B=3/F=1 ref,fexp
+	Close ref
+
+	dx=(xmax-xmin)/(npoint-1)
+//	print npoint,xmin,xmax,dx,fexp
+
+	skip=512
+	GBLoadWave /N=$"dummyxwave"/T={2,2}/B=3/U=(npoint)/S=(skip)/W=1/P=$thePath fileName
+	skip=512+npoint*4+32
+	GBLoadWave /N=$"dummyywave"/T={32,2}/B=3/U=(npoint)/S=(skip)/W=1/Y={0,2^(fexp-32)}/P=$thePath fileName
+// Duplicate with a specified name
+	if (strlen(name)<1)
+		tmpname=wname(fileName)
+		if(nmschm==0) // conventional naming scheme
+			name="W"+tmpname
+			xname="L"+tmpname
+		elseif(nmschm<0)
+			xname=which+tmpname+"_0"
+			name=which+tmpname+"_1"
+		else  // simplified naming schme (use only last "nmchm"-digits)
+			wnlength=strlen(tmpname)
+			tmpname2=tmpname[wnlength-nmschm,wnlength-1]
+			xname=which+tmpname+"_0"
+			name=which+tmpname+"_1"
+		endif
+	else
+		tmpname=name
+		xname=tmpname+"_0"
+		name=tmpname+"_1"
+	endif
+	SetScale/I x xmin,xmax,"",dummyywave0
+	duplicate /O dummyywave0,$name
+	duplicate /O dummyxwave0,$xname
+End
+
+
+Macro MultiSPCLoad(thePath, nmschm,which,dsetnm,wantToPrint,flag)
+	String thePath="_New Path_",which="W",dsetnm="data"
+	Variable expnml=1,nmschm=2,wantToPrint=2
 	Variable flag=1
+	Prompt thePath, "Name of path containing text files", popup PathList("*", ";", "")+"_New Path_"
+	Prompt nmschm,"wave naming scheme"
+	Prompt which,"wave prefix"
+	Prompt dsetnm, "prefix for dataset name"
+	Prompt wantToPrint, "Do you want to print graphs?", popup, "Yes;No"
 	Prompt flag,"swap wavelength ?",popup,"no;yes"
-	String ftype=".spc"
 	PauseUpdate;	Silent 1
 
-	FMultiSPCLoad(thePath, wantToPrint,flag)
+	FMultiSPCLoad(thePath, expnml,nmschm,which,dsetnm, wantToPrint,flag)
 Endmacro
 
-Function FMultiSPCLoad(thePath, wantToPrint,flag)
-	String thePath
-	Variable wantToPrint
+Function FMultiSPCLoad(thePath,expnml,nmschm,which,dsetnm,wantToPrint,flag)
+	String thePath,which,dsetnm
+	Variable expnml,nmschm,wantToPrint
 	Variable flag
 	
 	String ftype=".spc"
-	String fileName
-	Variable fileIndex=0, gotFile
+	String fileName,name,nametmp
+	Variable filenum=0, gotFile,wnlength
+	NVAR g_DSOindex
+
+	// create data set
+	FDSOinit0(dsetnm)
+	DSOCreate0(0,1)
+	dsetnm=dsetnm+num2istr(g_DSOindex-1)
+	Wave/T wdsetnm=$dsetnm
 	
+	if(nmschm==0)
+		Make/T/N=1/O tmpnm
+	endif
+
 	if (CmpStr(thePath, "_New Path_") == 0)		// user selected new path ?
 		NewPath/O data			// this brings up dialog and creates or overwrites path
 		thePath = "data"
@@ -243,10 +322,24 @@ Function FMultiSPCLoad(thePath, wantToPrint,flag)
 	endif
 	
 	do
-		fileName = IndexedFile($thePath,fileIndex,ftype)			// get name of next file in path
+		fileName = IndexedFile($thePath,filenum,ftype)			// get name of next file in path
 		gotFile = CmpStr(fileName, "")
 		if (gotFile)
-			FSPCload("",fileName,thePath)
+			nametmp=wname(fileName)
+			wnlength=strlen(nametmp)
+			if(nmschm==0)
+				Redimension/N=(filenum+1) tmpnm
+				tmpnm[filenum]=nametmp
+				name=which+num2istr(filenum)
+				print fileName,":",name
+			elseif (nmschm <0)
+				name=which+nametmp
+				print filename, ":",name
+			else // conventional naming scheme with
+				name=which+nametmp[wnlength-nmschm,wnlength-1]
+				print fileName
+			endif
+			FSPCload2(name,fileName,thePath,expnml,nmschm,which)
 			//LoadWave/G/P=$thePath/O/N=wave fileName		// load the waves from file
 			Textbox/C/N=tb_file/F=0/A=MT/X=-30/Y=5 "File: "+fileName
 			DoUpdate		// make sure graph updated before printing
@@ -254,8 +347,15 @@ Function FMultiSPCLoad(thePath, wantToPrint,flag)
 				Execute("PrintGraphs/R Graphplot(2, 2, 98, 98)/F=1")	// print graph
 			endif
 		endif
-		fileIndex += 1
+		wdsetnm[filenum]=name
+		filenum += 1
 	while (gotFile)									// until TextFile runs out of files
+	
+	Redimension/N=(filenum) $dsetnm
+	DSODisplayTable(dsetnm)
+	if(nmschm==0)
+		Edit tmpnm
+	Endif
 End
 
 // Macro to load PL data taken by spectramax program 
