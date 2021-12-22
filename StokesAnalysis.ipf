@@ -1,10 +1,54 @@
 ﻿#pragma TextEncoding = "UTF-8"
 #pragma rtGlobals=3		// Use modern global access method and strict wave access.
 
-// StokesAnalysis.ipf
-
-//
 #include "LoadIqvImage"
+
+// StokesAnalysis.ipf
+// 	Load/Construct/Show/Modify/Resize Images of Stokes parameters S0...S3
+// 
+// Data are
+//		: Aqcuired with (rotatating HWP or QWP) + vertical/horizontal polarizer
+//		: saved as binary format for IQV image with 480x640 image
+//		: assumed to saved with names
+// 		nameHWP_0_none.dat : I(0,phi)
+// 		nameHWP_45_none.dat : I(0,phi)
+// 		nameHWP_90_none.dat
+// 		nameHWP_135_none.dat
+// 		nameQWP_none_45.dat
+// 		nameQWP_none_135.dat
+
+Menu "GraphMarquee"
+	"Stokes ZoomIn all",FZoomInStokes()
+End
+
+//Menu "Stokes"
+//	"Load and Show Stokes",FLoadAndDisplayStokes1(path,nameQWP,nameHWP,basename)
+//	"-"
+//	"Creat load wave list",	FCreateLoadWaveList(wlist,nameHWP,nameQWP)
+//	"Load Stokes image data",FLoadAndDisplayStokes1(path,nameQWP,nameHWP,basename)
+//	"Show Stokes image data",FShowStokesParams(basename)
+//End
+
+Macro LoadAndDisplayStokes1(path,nameQWP,nameHWP,basename)
+	String path,nameHWP,nameQWP,basename
+	Prompt path,"path name"
+	Prompt nameHWP,"base name for lambda/2 data"
+	Prompt nameQWP,"base name for lambda/4 data"
+	Prompt basename,"base name for data storage"
+	PauseUpdate; Silent 1
+	
+	FLoadAndDisplayStokes1(path,nameQWP,nameHWP,basename)
+End
+
+Function FLoadAndDisplayStokes1(path,nameQWP,nameHWP,basename)
+	String path,nameHWP,nameQWP,basename
+	
+	String wlist="basename_list"
+	
+	FCreateLoadWaveList(wlist,nameHWP,nameQWP)
+	FLoadStokesImageList(path,wlist,basename)
+	FShowStokesParams(basename)
+End
 
 Function FCalcStokesParams(basename,fpol,fnorm)
 	String basename
@@ -51,10 +95,6 @@ Function FCalcStokesParams(basename,fpol,fnorm)
 		ws2 /=ws0
 		ws3 /=ws0
 	endif
-End
-
-Function FDisplayStokes(basename)
-	String basename
 End
 
 Function FLoadStokesImage(path,basename)
@@ -164,15 +204,111 @@ Function FLoadStokesImageList(path,wlist,basename)
 	FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
 End
 
-Function FCreateLoadWaveList(target,name1,name2)
-	String target,name1,name2
+Function FCreateLoadWaveList(wlist,nameHWP,nameQWP)
+	String wlist,nameHWP,nameQWP
 	
-	Make/N=6/O/T $target
-	Wave/T wtarget =$target
-	wtarget[0]=name1 //+"_0_none"
-	wtarget[1]=name1 //+"_45_none"
-	wtarget[2]=name1 //+"_90_none"
-	wtarget[3]=name1 //+"_135_none"
-	wtarget[4]=name2 //+"_none_45"
-	wtarget[5]=name2 //+"_none_135"
+	Make/N=6/O/T $wlist
+	Wave/T wwlist =$wlist
+	wwlist[0]=nameHWP //+"_0_none"
+	wwlist[1]=nameHWP //+"_45_none"
+	wwlist[2]=nameHWP //+"_90_none"
+	wwlist[3]=nameHWP //+"_135_none"
+	wwlist[4]=nameQWP //+"_none_45"
+	wwlist[5]=nameQWP //+"_none_135"
 End
+
+Function FShowStokesParams(basename)
+	String basename
+	String s0,s1,s2,s3,wdwName
+
+	String/G G_basename
+	g_basename=basename
+	
+	s0="S"+basename+"_S0"
+	s1="S"+basename+"_S1"
+	s2="S"+basename+"_S2"
+	s3="S"+basename+"_S3"
+
+	FSHowIqvImage(s0,0.01)
+	wdwName="S0_"+basename+"_win"
+	DoWindow/C $wdwName
+	ModifyImage $s0 ctab= {*,*,Rainbow,0}
+
+	FSHowIqvImage(s1,0.01)
+	wdwName="S1_"+basename+"_win"
+	DoWindow/C $wdwName
+	ModifyImage $s1 ctab= {-1,1,Rainbow,0}
+
+	FSHowIqvImage(s2,0.01)
+	wdwName="S2_"+basename+"_win"
+	DoWindow/C $wdwName
+	ModifyImage $s2 ctab= {-1,1,Rainbow,0}
+
+	FSHowIqvImage(s3,0.01)
+	wdwName="S3_"+basename+"_win"
+	DoWindow/C $wdwName
+	ModifyImage $s3 ctab= {-1,1,Rainbow,0}
+End
+
+Function FModifyStokesImageRange(basename,xmin,xmax,ymin,ymax)
+	String basename
+	Variable xmin,xmax,ymin,ymax
+	
+	String wdwName
+	print xmin,xmax,ymin,ymax
+	wdwName="S0_"+basename+"_win"
+	DoWindow/C $wdwName
+	SetAxis left ymin,ymax
+	SetAxis bottom xmin,xmax
+	
+	wdwName="S1_"+basename+"_win"
+	DoWindow/C $wdwName
+	SetAxis left ymin,ymax
+	SetAxis bottom xmin,xmax
+	
+	wdwName="S2_"+basename+"_win"
+	DoWindow/C $wdwName
+	SetAxis left ymin,ymax
+	SetAxis bottom xmin,xmax
+	
+	wdwName="S3_"+basename+"_win"
+	DoWindow/C $wdwName
+	SetAxis left ymin,ymax
+	SetAxis bottom xmin,xmax
+	
+End
+
+Function FZoomInStokes()
+	GetMarquee left, bottom
+	String basename
+	SVAR G_basename
+	basename=G_basename
+	if (V_flag == 0)
+		Print "There is no marquee"
+	else
+		FModifyStokesImageRange(basename,V_left,V_right,V_bottom,V_top)
+	endif
+End
+
+Function FResizeStokesImageAll(basename,imgsize)
+	Variable imgsize
+	String basename
+	
+	String wdwName
+	wdwName="S0_"+basename+"_win"
+	DoWindow/C $wdwName
+	FResizeImages(imgsize)
+	
+	wdwName="S1_"+basename+"_win"
+	DoWindow/C $wdwName
+	FResizeImages(imgsize)
+	
+	wdwName="S2_"+basename+"_win"
+	DoWindow/C $wdwName
+	FResizeImages(imgsize)
+	
+	wdwName="S3_"+basename+"_win"
+	DoWindow/C $wdwName
+	FResizeImages(imgsize)
+End	
+	
