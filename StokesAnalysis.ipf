@@ -118,35 +118,50 @@ Function FLoadStokesImageList(path,wlist,basename)
 	String wvname,file	
 	Variable ref
 	String extstr=".dat"
-	String file_orig,file_basename
+	String file_orig="",file_basename
 
 	Wave/T wwlist=$wlist
 
-	wvname="S"+basename
-	file = wwlist[0]+"_0_none.dat"
-	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
-
-	if(1)
-	wvname="S"+basename
-	file = wwlist[1]+"_40_none.dat"
-	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
-
-	wvname="S"+basename
-	file = wwlist[2]+".dat"
-	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
-
-	wvname="S"+basename
-	file = wwlist[3]+"_135_none"
-	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
-
-	wvname="S"+basename
-	file = wwlist[4]+"_none_45.dat"
-	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
-
-	wvname="S"+basename
-	file = wwlist[5]+"_none_135.dat"
-	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+	if (strlen(file_orig)<=0)
+		Open /D/R/P=$path/T=(extstr) ref
+		file_orig= S_fileName
 	endif
+	String path2,file2,pathstr
+	path2=parseFilePath(1,file_orig,":",1,0)
+//	file2=parseFilePath(0,file_orig,":",1,0)
+
+//	pathstr="imgPath"
+//	NewPath pathstr,path2
+
+	wvname="S"+basename+"_0_none"
+	file = path2+wwlist[0]+"_0_none.dat"
+//	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+	FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+
+	wvname="S"+basename+"_45_none"
+	file = path2+wwlist[1]+"_45_none.dat"
+//	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+	FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+
+	wvname="S"+basename+"_90_none"
+	file = path2+wwlist[2]+"_90_none.dat"
+//	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+	FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+
+	wvname="S"+basename+"_135_none"
+	file = path2+wwlist[3]+"_135_none.dat"
+//	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+	FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+
+	wvname="S"+basename+"_none_45"
+	file = path2+wwlist[4]+"_none_45.dat"
+//	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+	FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+
+	wvname="S"+basename+"_none_135"
+	file = path2+wwlist[5]+"_none_135.dat"
+//	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+	FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
 End
 
 Function FCreateLoadWaveList(target,name1,name2)
@@ -154,10 +169,10 @@ Function FCreateLoadWaveList(target,name1,name2)
 	
 	Make/N=6/O/T $target
 	Wave/T wtarget =$target
-	wtarget[0]=name1+"_0_none"
-	wtarget[1]=name1+"_45_none"
-	wtarget[2]=name1+"_90_none"
-	wtarget[3]=name1+"_135_none"
-	wtarget[4]=name2+"_none_45"
-	wtarget[5]=name2+"_none_135"
+	wtarget[0]=name1 //+"_0_none"
+	wtarget[1]=name1 //+"_45_none"
+	wtarget[2]=name1 //+"_90_none"
+	wtarget[3]=name1 //+"_135_none"
+	wtarget[4]=name2 //+"_none_45"
+	wtarget[5]=name2 //+"_none_135"
 End
