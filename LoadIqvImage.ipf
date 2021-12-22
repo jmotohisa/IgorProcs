@@ -5,6 +5,7 @@
 // Load binary image file saved with Iqvsampl4 (LV7 program)
 //
 // ver 0.1	2006/06/22 : first version
+// ver 0.1b 2021/12/23 : ResizeImage functionized
 
 Macro LoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
 	Variable sizex=640,sizey=480,imgsize=0.02
@@ -55,13 +56,19 @@ Macro ShowIQVimage(wvname,imgsize)
 	FShowIQVimage(wvname,imgsize)
 End
 
-Macro ResizeImages(imgsize)
+Function FResizeImages(imgsize)
 	Variable imgsize
-	PauseUpdate;Silent 1
 	
 	Variable imgsize2
 	imgsize2=imgsize*28.3465
 	ModifyGraph width={perUnit,(imgsize2),bottom},height={perUnit,(imgsize2),left}
+End
+
+Macro ResizeImages(imgsize)
+	Variable imgsize
+	PauseUpdate;Silent 1
+	
+	FResizeImages(imgsize)
 End
 
 Macro RemoveAxes()
