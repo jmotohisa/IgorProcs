@@ -45,7 +45,6 @@ Function FShowIQVimage(wvname,imgsize)
 	Display; AppendImage $wvname
 	imgsize2=imgsize*28.3465
 	ModifyGraph width={perUnit,(imgsize2),bottom},height={perUnit,(imgsize2),left}
-	Execute("JEG_AddColorLegend(wvname)")
 End
 
 Macro ShowIQVimage(wvname,imgsize)
@@ -54,6 +53,7 @@ Macro ShowIQVimage(wvname,imgsize)
 	Prompt wvname,"wave name",popup,WaveList("*",";","DIMS:2")
 	PauseUpdate;Silent 1
 	FShowIQVimage(wvname,imgsize)
+	Execute("JEG_AddColorLegend(wvname)")
 End
 
 Function FResizeImages(imgsize)

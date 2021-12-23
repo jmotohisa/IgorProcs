@@ -29,24 +29,48 @@ End
 //	"Show Stokes image data",FShowStokesParams(basename)
 //End
 
-Macro LoadAndDisplayStokes1(path,nameQWP,nameHWP,basename)
-	String path,nameHWP,nameQWP,basename
+Macro InitStokesAnalysis(basename,path)
+	String basename,path="_New Path_"
+End
+
+Function FInitStokesAnalysis(basename,path)
+	String basename,path
+	
+	String/G g_basename
+	String/G g_path
+	
+	if (CmpStr(path, "_New Path_") == 0)		// user selected new path ?
+		NewPath/O StokesData			// this brings up dialog and creates or overwrites path
+		path = "StokesData"
+	endif
+	
+	g_basename=basename
+	g_path=path
+End
+
+Macro LoadAndDisplayStokes1(path,nameHWP,nameQWP,basename,fpol,fnorm)
+	String path=g_path,nameHWP,nameQWP,basename=g_basename
+	Variable fpol=1,fnorm=1
 	Prompt path,"path name"
 	Prompt nameHWP,"base name for lambda/2 data"
 	Prompt nameQWP,"base name for lambda/4 data"
 	Prompt basename,"base name for data storage"
+	Prompt fpol,"polarizer",popup,"vertical;horizontal"
+	Prompt fnorm,"normalize S1...S3?",popup,"yes;no"
 	PauseUpdate; Silent 1
 	
-	FLoadAndDisplayStokes1(path,nameQWP,nameHWP,basename)
+	FLoadAndDisplayStokes1(path,nameHWP,nameQWP,basename,fpol,fnorm)
 End
 
-Function FLoadAndDisplayStokes1(path,nameQWP,nameHWP,basename)
+Function FLoadAndDisplayStokes1(path,nameHWP,nameQWP,basename,fpol,fnorm)
 	String path,nameHWP,nameQWP,basename
+	Variable fpol,fnorm
 	
 	String wlist="basename_list"
 	
 	FCreateLoadWaveList(wlist,nameHWP,nameQWP)
 	FLoadStokesImageList(path,wlist,basename)
+	FCalcStokesParams(basename,fpol,fnorm)
 	FShowStokesParams(basename)
 End
 
@@ -129,7 +153,7 @@ Function FLoadStokesImage(path,basename)
 
 	if(1)
 	wvname="S"+basename+"_45_none"
-	file = file_basename+"_40_none.dat"
+	file = file_basename+"_45_none.dat"
 	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
 
 	wvname="S"+basename+"_90_none"
@@ -257,22 +281,22 @@ Function FModifyStokesImageRange(basename,xmin,xmax,ymin,ymax)
 	String wdwName
 	print xmin,xmax,ymin,ymax
 	wdwName="S0_"+basename+"_win"
-	DoWindow/C $wdwName
+	DoWindow/F $wdwName
 	SetAxis left ymin,ymax
 	SetAxis bottom xmin,xmax
 	
 	wdwName="S1_"+basename+"_win"
-	DoWindow/C $wdwName
+	DoWindow/F $wdwName
 	SetAxis left ymin,ymax
 	SetAxis bottom xmin,xmax
 	
 	wdwName="S2_"+basename+"_win"
-	DoWindow/C $wdwName
+	DoWindow/F $wdwName
 	SetAxis left ymin,ymax
 	SetAxis bottom xmin,xmax
 	
 	wdwName="S3_"+basename+"_win"
-	DoWindow/C $wdwName
+	DoWindow/F $wdwName
 	SetAxis left ymin,ymax
 	SetAxis bottom xmin,xmax
 	
@@ -296,19 +320,19 @@ Function FResizeStokesImageAll(basename,imgsize)
 	
 	String wdwName
 	wdwName="S0_"+basename+"_win"
-	DoWindow/C $wdwName
+	DoWindow/F $wdwName
 	FResizeImages(imgsize)
 	
 	wdwName="S1_"+basename+"_win"
-	DoWindow/C $wdwName
+	DoWindow/F $wdwName
 	FResizeImages(imgsize)
 	
 	wdwName="S2_"+basename+"_win"
-	DoWindow/C $wdwName
+	DoWindow/F $wdwName
 	FResizeImages(imgsize)
 	
 	wdwName="S3_"+basename+"_win"
-	DoWindow/C $wdwName
+	DoWindow/F $wdwName
 	FResizeImages(imgsize)
 End	
 	
