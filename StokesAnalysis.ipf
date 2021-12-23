@@ -29,21 +29,28 @@ End
 //	"Show Stokes image data",FShowStokesParams(basename)
 //End
 
-Macro InitStokesAnalysis(basename,path)
+Macro InitStokesAnalysis(path,basename)
 	String basename,path="_New Path_"
-End
-
-Function FInitStokesAnalysis(basename,path)
-	String basename,path
+	Prompt path,"data load path",popup,PathList("*", ";", "")+"_New Path_"
+	Prompt basename,"base name wave"
+	PauseUpdate; Silent 1
 	
 	String/G g_basename
 	String/G g_path
+	
+	FInitStokesAnalysis(path,basename)
+End
+
+Function FInitStokesAnalysis(path,basename)
+	String basename,path
 	
 	if (CmpStr(path, "_New Path_") == 0)		// user selected new path ?
 		NewPath/O StokesData			// this brings up dialog and creates or overwrites path
 		path = "StokesData"
 	endif
 	
+	SVAR g_basename
+	SVAR g_path
 	g_basename=basename
 	g_path=path
 End
@@ -67,11 +74,16 @@ Function FLoadAndDisplayStokes1(path,nameHWP,nameQWP,basename,fpol,fnorm)
 	Variable fpol,fnorm
 	
 	String wlist="basename_list"
+	Variable retval
 	
 	FCreateLoadWaveList(wlist,nameHWP,nameQWP)
-	FLoadStokesImageList(path,wlist,basename)
+	retval=FLoadStokesImageList(path,wlist,basename)
+	if(retval!=1)
+		return 0
+	endif
 	FCalcStokesParams(basename,fpol,fnorm)
 	FShowStokesParams(basename)
+	return 1
 End
 
 Function FCalcStokesParams(basename,fpol,fnorm)
@@ -178,54 +190,75 @@ End
 Function FLoadStokesImageList(path,wlist,basename)
 	String path,wlist,basename
 	
-	Variable sizex=640,sizey=480,imgsize=0.01
+	Variable sizex=640,sizey=480
 	String wvname,file	
-	Variable ref
-	String extstr=".dat"
-	String file_orig="",file_basename
+	String ftype=".dat"
+	String dirList = IndexedFile($path, -1, ftype)
 
 	Wave/T wwlist=$wlist
-
-	if (strlen(file_orig)<=0)
-		Open /D/R/P=$path/T=(extstr) ref
-		file_orig= S_fileName
-	endif
-	String path2,file2,pathstr
-	path2=parseFilePath(1,file_orig,":",1,0)
-//	file2=parseFilePath(0,file_orig,":",1,0)
-
-//	pathstr="imgPath"
-//	NewPath pathstr,path2
+	Variable retval=1
 
 	wvname="S"+basename+"_0_none"
-	file = path2+wwlist[0]+"_0_none.dat"
-//	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
-	FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+	file = wwlist[0]+"_0_none.dat"
+	if(FindListItem(file,dirList)>0)
+//		FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+		FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+	else
+		print "file ",file," not found."
+		retval=0
+	endif
 
 	wvname="S"+basename+"_45_none"
-	file = path2+wwlist[1]+"_45_none.dat"
-//	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
-	FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+	file = wwlist[1]+"_45_none.dat"
+	if(FindListItem(file,dirList)>0)
+//		FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+		FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+	else
+		print "file ",file," not found."
+		retval=0
+	endif
 
 	wvname="S"+basename+"_90_none"
-	file = path2+wwlist[2]+"_90_none.dat"
-//	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
-	FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+	file = wwlist[2]+"_90_none.dat"
+	if(FindListItem(file,dirList)>0)
+//		FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+		FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+	else
+		print "file ",file," not found."
+		retval=0
+	endif
 
 	wvname="S"+basename+"_135_none"
-	file = path2+wwlist[3]+"_135_none.dat"
-//	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
-	FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
-
+	file = wwlist[3]+"_135_none.dat"
+	if(FindListItem(file,dirList)>0)
+//		FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+		FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+	else
+		print "file ",file," not found."
+		retval=0
+	endif
+	
 	wvname="S"+basename+"_none_45"
-	file = path2+wwlist[4]+"_none_45.dat"
-//	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
-	FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+	file = wwlist[4]+"_none_45.dat"
+	if(FindListItem(file,dirList)>0)
+//		FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+		FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+	else
+		print "file ",file," not found."
+		retval=0
+	endif
 
 	wvname="S"+basename+"_none_135"
-	file = path2+wwlist[5]+"_none_135.dat"
-//	FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
-	FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+	file = wwlist[5]+"_none_135.dat"
+	if(FindListItem(file,dirList)>0)
+//		FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
+		FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
+	else
+		print "file ",file," not found."
+		retval=0
+	endif
+	
+	return retval
 End
 
 Function FCreateLoadWaveList(wlist,nameHWP,nameQWP)
