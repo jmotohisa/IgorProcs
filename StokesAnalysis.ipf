@@ -67,6 +67,8 @@ Macro LoadAndDisplayStokes1(path,nameHWP,nameQWP,basename,fpol,fnorm)
 	PauseUpdate; Silent 1
 	
 	FLoadAndDisplayStokes1(path,nameHWP,nameQWP,basename,fpol,fnorm)
+	g_path=path
+	
 End
 
 Function FLoadAndDisplayStokes1(path,nameHWP,nameQWP,basename,fpol,fnorm)
@@ -347,6 +349,15 @@ Function FZoomInStokes()
 	endif
 End
 
+Macro ResizeStokesImageAll(basename,imgsize)
+	Variable imgsize
+	String basename=g_basename
+	pauseUpdate; Silent 1
+	
+	FResizeStokesImageAll(basename,imgsize)
+	g_basename=basename
+End
+
 Function FResizeStokesImageAll(basename,imgsize)
 	Variable imgsize
 	String basename
@@ -367,5 +378,5 @@ Function FResizeStokesImageAll(basename,imgsize)
 	wdwName="S3_"+basename+"_win"
 	DoWindow/F $wdwName
 	FResizeImages(imgsize)
-End	
 	
+End
