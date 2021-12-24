@@ -20,6 +20,7 @@ Macro InitMakeMovie0(path,twindow,twave,twave_list)
 		path = "imgData"
 	endif
 
+	String/G g_path=path
 	String/G g_twindow=twindow
 	String/G g_twave=twave
 	String/G g_twave_list=twave_list
@@ -47,6 +48,7 @@ Macro LoadWaveInList(twave_list,path)
 
 	FLoadWaveInList(twave_list,path)
 	g_twave_list=twave_list
+	g_path=path
 End
 
 Macro MakeMovie0(twindow,twave,twave_list,frameRate)
@@ -245,7 +247,8 @@ Function FLoadWaveInList(twave_list,path)
 	do
 		wvname=wtarget[i]
 		filename=wtarget[i]+".dat"
-		if(FindListItem(filename, dirList)>0)
+		Variable item=FindListItem(filename, dirList)
+		if(item>=0)
 			FLoadMatrixBinaryWave(wvname,path,filename,sizex,sizey,0,16,4)
 		endif
 //		fileName = IndexedFile($path,i,ftype)			// get name of next file in path
