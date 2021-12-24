@@ -200,7 +200,7 @@ Function FLoadStokesImageList(path,wlist,basename)
 
 	wvname="S"+basename+"_0_none"
 	file = wwlist[0]+"_0_none.dat"
-	if(FindListItem(file,dirList)>0)
+	if(FindListItem(file,dirList)>=0)
 //		FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
 		FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
 	else
@@ -210,7 +210,7 @@ Function FLoadStokesImageList(path,wlist,basename)
 
 	wvname="S"+basename+"_45_none"
 	file = wwlist[1]+"_45_none.dat"
-	if(FindListItem(file,dirList)>0)
+	if(FindListItem(file,dirList)>=0)
 //		FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
 		FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
 	else
@@ -220,7 +220,7 @@ Function FLoadStokesImageList(path,wlist,basename)
 
 	wvname="S"+basename+"_90_none"
 	file = wwlist[2]+"_90_none.dat"
-	if(FindListItem(file,dirList)>0)
+	if(FindListItem(file,dirList)>=0)
 //		FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
 		FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
 	else
@@ -230,7 +230,7 @@ Function FLoadStokesImageList(path,wlist,basename)
 
 	wvname="S"+basename+"_135_none"
 	file = wwlist[3]+"_135_none.dat"
-	if(FindListItem(file,dirList)>0)
+	if(FindListItem(file,dirList)>=0)
 //		FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
 		FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
 	else
@@ -240,7 +240,7 @@ Function FLoadStokesImageList(path,wlist,basename)
 	
 	wvname="S"+basename+"_none_45"
 	file = wwlist[4]+"_none_45.dat"
-	if(FindListItem(file,dirList)>0)
+	if(FindListItem(file,dirList)>=0)
 //		FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
 		FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
 	else
@@ -250,7 +250,7 @@ Function FLoadStokesImageList(path,wlist,basename)
 
 	wvname="S"+basename+"_none_135"
 	file = wwlist[5]+"_none_135.dat"
-	if(FindListItem(file,dirList)>0)
+	if(FindListItem(file,dirList)>=0)
 //		FLoadIQVImage(wvname,path,file,sizex,sizey,imgsize)
 		FLoadMatrixBinaryWave(wvname,path,file,sizex,sizey,0,16,4)
 	else
