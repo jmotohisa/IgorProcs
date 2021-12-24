@@ -8,7 +8,7 @@
 // in "twave_list"
 
 Macro InitMakeMovie0(path,twindow,twave,twave_list)
-	String path,twindow,twave,twave_list
+	String path="_New Path_",twindow,twave,twave_list
 	Prompt path,"data load path",popup,PathList("*", ";", "")+"_New Path_"
 	Prompt twindow,"target window name"
 	Prompt twave,"target wave"
@@ -25,10 +25,49 @@ Macro InitMakeMovie0(path,twindow,twave,twave_list)
 	String/G g_twave_list=twave_list
 End
 
+Macro MakeWaveList(twave_list,prefix,start,stop)
+	String twave_list=g_twave_list,prefix
+	Variable start,stop
+	Prompt twave_list,"wave list"
+	Prompt prefix, "prefix of file name"
+	Prompt start,"starting index"
+	Prompt stop, "ending index"
+	PauseUpdate; Silent 1
+	
+	FMakeWaveList(twave_list,prefix,start,stop)
+
+	g_twave_list=twave_list
+End
+
+Macro LoadWaveInList(twave_list,path)
+	String twave_list=g_twave_list,path=g_path
+	Prompt twave_list,"wave list"
+	Prompt path,"data load path",popup,PathList("*", ";", "")+"_New Path_"
+	PauseUpdate; Silent 1
+
+	FLoadWaveInList(twave_list,path)
+	g_twave_list=twave_list
+End
+
+Macro MakeMovie0(twindow,twave,twave_list,frameRate)
+	String twindow=g_twindow,twave=g_twave,twave_list=g_twave_list
+	Variable framerate=0.2
+	Prompt twindow,"target window name"
+	Prompt twave,"target wave"
+	Prompt twave_list,"wave list"
+	Prompt framerate,"frame rate"
+	
+	FMakeMovie0(twindow,twave,twave_list,frameRate)
+
+	g_twindow=twindow
+	g_twave_list=twave_list
+	g_twave=twave
+End
+
 Function FMakeMovie0(twindow,twave,twave_list,frameRate)
 	String twindow,twave,twave_list
 	Variable frameRate
-	
+		
 	Variable nframe=DimSize($twave_list,0)
 	Variable i
 	Wave/T wtwave_list=$twave_list
@@ -101,9 +140,14 @@ End
 
 // example of movieGraph
 
-Window ex0_MovieGraph(twindow,twave,twave_list,imgSize) : Graph
-	String twave,twave_list,twindow
-	Variable imgSize
+Macro ex0_MovieGraph(twindow,twave,twave_list,imgSize)
+	String twave=g_twave,twave_list=g_twave_list,twindow=g_twindow
+	Variable imgSize=0.1
+	Prompt twindow,"target window name"
+	Prompt twave,"target wave"
+	Prompt twave_list,"wave list"
+	Prompt imgSize,"image size"
+	PauseUpdate silent 1;
 	
 	String orig=$twave_list[0]
 	Duplicate/O $orig,$twave
@@ -114,7 +158,20 @@ Window ex0_MovieGraph(twindow,twave,twave_list,imgSize) : Graph
 		FShowIqvImage(twave,imgSize)
 		DoWindow/C $twindow
 	endif
+
+	g_twindow=twindow
+	g_twave_list=twave_list
+	g_twave=twave
 EndMacro
+
+Macro FindMinMaxInWaveList(twindow,twave_list)
+	String twave_list=g_twave_list,twindow=g_twindow
+ 	PauseUpdate; Silent 1
+ 	
+	FFindMinMaxInWaveList(twindow,twave_list)
+	g_twindow=twindow
+	g_twave_list=twave_list
+End
 
 Window ex1_MovieGraph(twindow,twave) : Graph
 	String twindow,twave
