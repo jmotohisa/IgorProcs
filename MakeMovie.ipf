@@ -68,7 +68,7 @@ Function MakeGizmoMovie0(twindow,twave,frameRate)
 		if(i==0)
 			newmovie/O/F=(framerate)
 		endif
-		ModifyGizmo ModifyObject=surface0,objectType=surface,property={plane,i}
+		execute("ModifyGizmo ModifyObject=surface0,objectType=surface,property={plane,i}")
 		DoUpdate
 		addmovieframe
 	endfor
@@ -91,7 +91,7 @@ Function MakeGizmoMovie00(frameRate)
 		if(i==0)
 			newmovie/O/F=(framerate)
 		endif
-		ModifyGizmo ModifyObject=surface0,objectType=surface,property={ plane,i}
+		execute("ModifyGizmo ModifyObject=surface0,objectType=surface,property={ plane,i}")
 		DoUpdate
 		addmovieframe
 	endfor
