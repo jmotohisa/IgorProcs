@@ -286,6 +286,7 @@ Macro MultiSPCLoad(thePath, nmschm,which,dsetnm,wantToPrint,flag)
 	Prompt flag,"swap wavelength ?",popup,"no;yes"
 	PauseUpdate;	Silent 1
 
+	Variable/G g_DSOindex
 	FMultiSPCLoad(thePath, expnml,nmschm,which,dsetnm, wantToPrint,flag)
 Endmacro
 
@@ -347,6 +348,7 @@ Function FMultiSPCLoad(thePath,expnml,nmschm,which,dsetnm,wantToPrint,flag)
 				Execute("PrintGraphs/R Graphplot(2, 2, 98, 98)/F=1")	// print graph
 			endif
 		endif
+		print dsetnm,filenum,name
 		wdsetnm[filenum]=name
 		filenum += 1
 	while (gotFile)									// until TextFile runs out of files
