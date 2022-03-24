@@ -9,6 +9,7 @@
 //	09/11/15 ver. 0.1b by J. Motohisa
 //
 //	revision history
+//		22/03/23 ver 0.4: critical bug fixed: TE and TM were flipped !!!!
 //		13/08/22 ver 0.3c: bug fixed in DispersionAll_wave
 //		13/06/26 ver 0.3b: field in the RZ plane added, bug in field for TE mode fixed
 //		13/04/13 ver 0.3a: development for the caluclation of leaky mode started
@@ -29,11 +30,14 @@ Menu "StepIndexFiber"
 	"Find root between cursol",Proc_FindRoot_csr()
 	"-"
 	"Show field xy-plane",Show_Field()
+	"Show field xy-plane all",Show_Field_XY()
 	"Show field rz-plane",Show_Field_RZ()
-	"Show vector field XY",Show_Field_XY()
+	"Show vector field",FieldArrowPlotXY()
+	"-"
 	"Initialize for dispersion calculation lam",initialize_calculate_dispersion()
 	"dispersion: beta vs lambda",calculate_dispersion_LambdaBeta()
 	"dispersion: beta vs omega",Dispersion_OmegaBetaAll()
+	"Get beta-lambda from dipersion",FieldFromCursor_betaomega()
 End
 
 // Initialization
@@ -54,7 +58,7 @@ Proc Init_StepIndexFiber(paramwv,funcwv,graphname,modename)
 	String/G g_paramwv=paramwv,g_funcwv=funcwv,g_graphname=graphname,g_mode=modename
 	Variable/G g_y1,g_y2,g_wl1,g_wl2,g_om1,g_om2,g_delta=0.05
 	init_PhysicalConstants()
-	Make/O/D/N=24 $paramwv
+	Make/O/D/N=25 $paramwv
 	cmd="SetDimLabel 0,0,'n1', "+g_paramwv;execute cmd //n1: index of core
 	cmd="SetDimLabel 0,1,'n2', "+g_paramwv;execute cmd //n2: index of clad
 	cmd="SetDimLabel 0,2,'radius', "+g_paramwv;execute cmd //radius:  core radius
@@ -79,6 +83,7 @@ Proc Init_StepIndexFiber(paramwv,funcwv,graphname,modename)
 	cmd="SetDimLabel 0,21,'beta0_re', "+g_paramwv;execute cmd // for leaky mode: initial value for real part of beta
 	cmd="SetDimLabel 0,22,'beta0_im', "+g_paramwv;execute cmd // for leaky mode: initial value for imaginary part of beta
 	cmd="SetDimLabel 0,23,'phil',"+g_paramwv; execute cmd // phil
+	cmd="SetDimLabel 0,24,'num',"+g_paramwv; execute cmd // num: number of divisions in displaying field
 	
 	Make/O/D/N=1001 $funcwv //
 	Make/O/D/N=1001 $(funcwv+"_hybrid") // hybrid mode
@@ -95,6 +100,7 @@ Proc Init_StepIndexFiber(paramwv,funcwv,graphname,modename)
 	$g_paramwv[%'n2']=1
 	$g_paramwv[%'radius']=300
 	$g_paramwv[%'p']=1
+	$g_paramwv[%'num']=51
 
 	g_wl1=$g_paramwv[%'lambda']
 	g_wl2=$g_paramwv[%'lambda']
@@ -342,15 +348,15 @@ Function/D func_hybrid_0(wv,beta0)
 //	return((e0+e1)*(n1*n1*e0+n2*n2*e1)-pp*pp*(ww*ww+(uu*uu))^2*beta0*beta0/(k0*k0))
 End
 
-// TM mode
+// TE mode
 // n1^2/n2^2 J'_0/u J_1 + K'_0/w K_0=0
-Function/D func_TM(beta0)
+Function/D func_TE(beta0)
 	Variable/D beta0
 	SVAR g_paramwv
-	return(func_TM_0($g_paramwv,beta0))
+	return(func_TE_0($g_paramwv,beta0))
 End Function
 
-Function/D func_TM_0(wv,beta0)
+Function/D func_TE_0(wv,beta0)
 	Wave wv
 	Variable/D beta0
 	Variable/D uu,ww,n1,n2
@@ -362,15 +368,15 @@ Function/D func_TM_0(wv,beta0)
 //	Return(uu*BesselJ(0,uu)*BesselK(1,ww)+BesselJ(1,uu)*w*besselK(0,ww))
 End
 
-// TE mode
+// TM mode
 // J'_0/u J_1 + K'_0/w K_0=0
-Function/D func_TE(beta0)
+Function/D func_TM(beta0)
 	Variable/D beta0
 	SVAR g_paramwv
-	return(func_TE_0($g_paramwv,beta0))
+	return(func_TM_0($g_paramwv,beta0))
 End Function
 
-Function/D func_TE_0(wv,beta0)
+Function/D func_TM_0(wv,beta0)
 	Wave wv
 	Variable/D beta0
 	Variable/D uu,ww,pp
@@ -599,8 +605,9 @@ Function Func_FindRoot(modename,pp,low,high,showgr,fquiet)
 	if(showgr==1)
 //		cmd="Proc_ShowFunction(modename)"
 		Func_ShowFunction(modename)
-		Execute cmd
+//		Execute cmd
 	Endif
+	print "wavelenth=",wv[%'lambda'],"k=",k0
 	Func_FindRoot0(modename,low,high,fquiet)
 End
 
@@ -807,12 +814,20 @@ Function Func_Show_Field(fieldname)
 	String Fieldname
 	
 	Variable xx,beta0,phil
-	Variable num=50,range=1.5
+	Variable num,range=1.5
 	String cmd,gname,wname
-	SVAR g_paramwv
+	SVAR g_paramwv,g_mode
 	Wave wv=$g_paramwv
 	xx=wv[%'radius']*range
-	wv[%'phil']=phil
+	if(stringmatch(g_mode,"TE")==1)
+		phil=90
+		wv[%'phil']=phil*pi/180
+	endif
+	if(stringmatch(g_mode,"TM")==1)
+		phil=0
+		wv[%'phil']=phil*pi/180
+	endif
+	num=wv[%'num']
 	wname="wfield_"+fieldname
 	Make/O/N=(num,num) $wname
 	SetScale/I x -xx,xx,"",$wname
@@ -861,11 +876,12 @@ Function Func_Show_Field_RZ(fieldname,rmax,zmin,zmax,phil)
 	zmax=paramwv[%'radius']*zmax
 	if(stringmatch(g_mode,"TE")==1)
 		phil=90
+		paramwv[%'phil']=phil*pi/180
 	endif
 	if(stringmatch(g_mode,"TM")==1)
 		phil=0
+		paramwv[%'phil']=phil*pi/180
 	endif
-	paramwv[%'phil']=phil*pi/180
 	wname="wfield_"+fieldname
 	Make/O/N=(nz,nr) $wname
 	SetScale/I x zmin,zmax,"",$wname
@@ -893,22 +909,48 @@ Function Func_Show_Field_RZ(fieldname,rmax,zmin,zmax,phil)
 	Endif
 End
 
-Proc Show_Field_XY()
+Proc Show_Field_XY(num)
 //	String Fieldname
 //	Prompt fieldname,"Name of the mode",popup,"Er;Et;Ez;Hr;Ht;Hz"
+	Variable num=50
 	PauseUpdate; Silent 1
 	
-	Variable xx,beta0
+	Func_Show_Field_XY(num)
+End
+
+
+Function Func_Show_Field_XY(num)
+//	String Fieldname
+//	Prompt fieldname,"Name of the mode",popup,"Er;Et;Ez;Hr;Ht;Hz"
+	Variable num
+	
+	SVAR g_paramwv,g_mode
+	wave wv=$g_paramwv
+	Variable xx,beta0,phil
 	String cmd,gname,wname,rwv,twv,xwv,ywv
+	if(stringmatch(g_mode,"TE")==1)
+		phil=90
+		wv[%'phil']=phil*pi/180
+	endif
+	if(stringmatch(g_mode,"TM")==1)
+		phil=0
+		wv[%'phil']=phil*pi/180
+	endif
+
+	wv[%'num']=num
 	rwv="wfield_Er"
 	twv="wfield_Et"
-	show_field("Et")
-	show_field("Er")
+	Func_show_field("Et")
+	Func_show_field("Er")
 	xwv="wfield_Ex"
 	ywv="wfield_Ey"
 	Duplicate/O $rwv,$xwv,$ywv
-	$xwv=$rwv*cos(atan2(y,x))-$twv*sin(atan2(y,x))
-	$ywv=$rwv*sin(atan2(y,x))+$twv*cos(atan2(y,x))
+	Wave wxwv=$xwv
+	Wave wywv=$ywv
+	Wave wrwv=$rwv
+	Wave wtwv=$twv
+	wxwv=wrwv*cos(atan2(y,x))-wtwv*sin(atan2(y,x))
+	wywv=wrwv*sin(atan2(y,x))+wtwv*cos(atan2(y,x))
 	gname="field_"+"Ex"
 	wname="wfield_"+"Ex"
 	If(strlen(winlist(gname,";",""))==0)
@@ -1295,31 +1337,33 @@ Proc calculate_dispersion_LambdaBeta(wvname,mode,start,stop,usecsr,stoperror)
 End
 
 // dispersion for normalized omega-beta; set radius 1
-Proc calculate_dispersion_OmegaBeta(wvname,mode,start,stop,usecsr,stoperror)
+Proc calculate_dispersion_OmegaBeta(wvname,mode,start,stop,usecsr,stoperror,pdisp)
 	String wvname,mode=g_mode
-	Variable start=0.01,stop=2,usecsr=1,stoperror=2
+	Variable start=0.01,stop=2,usecsr=1,stoperror=2,pdisp=2
 	Prompt wvname, "wave name"
 	Prompt mode,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
 	Prompt start,"staring omega"
 	Prompt stop,"ending omega"
 	Prompt usecsr,"bracket with cursor ?",popup,"yes;no"
 	Prompt stoperror, "stop on error ?",popup,"yes;no"
+	Prompt pdisp,"display graph ?",popup,"no;yes;append"
 	PauseUpdate; Silent 1
 	
 	Make/O $wvname
 	SetScale/I x 2*pi/stop,2*pi/start,"nm", $wvname
-	calculate_dispersion_wave(wvname,mode,usecsr,1,stoperror)
+	calculate_dispersion_wave(wvname,mode,usecsr,1,stoperror,pdisp)
 	Make/O omegawave
 	SetScale/I x, start,stop,"",omegawave
 End
 
-Proc calculate_dispersion_wave(wname,mode,usecsr,xmode,stoperror)
+Proc calculate_dispersion_wave(wname,mode,usecsr,xmode,stoperror,pdisp)
 	String wname,mode=g_mode
-	Variable usecsr=1,xmode=0,stoperror=2
+	Variable usecsr=1,xmode=0,stoperror=2,pdisp=2
 	Prompt wname, "wave name"
 	Prompt mode,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
 	Prompt usecsr,"bracket with cursor ?",popup,"yes;no"
 	Prompt stoperror,"stop on error ?",popup,"yes;no"
+	Prompt pdisp,"display graph ?",popup,"no;yes;append"
 	PauseUpdate; Silent 1
 	
 	Variable i,n,x0,dx,xx,n1,n2,beta0,betamin,betamax,pp
@@ -1359,28 +1403,32 @@ Proc calculate_dispersion_wave(wname,mode,usecsr,xmode,stoperror)
 		$wname[i]=$g_paramwv[%'beta']
 		i=i+1
 	while(i<n)
+//	if(pdisp==2)
+//		Display
+//	endif
 End
 
-Proc Dispersion_OmegaBetaAll(wname,mode,pmode,start,stop,nmax)
+Proc Dispersion_OmegaBetaAll(wname,mode,pmode,start,stop,nmax,pdisp)
 	String wname,mode=g_mode
 	Variable start=0.4,stop=2,nmax=5
-	Variable pmode=1
+	Variable pmode=1,pdisp
 	Prompt wname, "wave name"
 	Prompt mode,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
 	Prompt pmode,"mode number"
 	Prompt start,"staring omega"
 	Prompt stop,"ending omega"
 	Prompt nmax,"maximum number of mode"
+	Prompt pdisp,"display graph ?",popup,"no;yes;append"
 	PauseUpdate; Silent 1
 	
 	Make/O/N=(128,nmax) $wname
 	SetScale/I x start,stop,"", $wname
-	DispersionAll_wave(wname,mode,pmode,2)
+	DispersionAll_wave(wname,mode,pmode,2,pdisp)
 End
 
-Function DispersionAll_wave(wname,modename,pmode,xmode)
+Function DispersionAll_wave(wname,modename,pmode,xmode,pdisp)
 	String wname,modename
-	Variable pmode,xmode
+	Variable pmode,xmode,pdisp
 //	Prompt wname,"wave name"
 //	Prompt nmax,"maximum number of mode"
 //	Prompt modename,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
@@ -1409,6 +1457,9 @@ Function DispersionAll_wave(wname,modename,pmode,xmode)
 	nmax=DimSize(dest,1)
 
 	i=0
+	if(pdisp==2)
+		Display
+	Endif
 	do
 		if(xmode==1)
 			lambda=x0+i*dx // x is wavelength
@@ -1421,6 +1472,15 @@ Function DispersionAll_wave(wname,modename,pmode,xmode)
 		dest[i][]=solwv[q+1]
 		i+=1
 	while(i<n)
+
+	if(pdisp>=2)
+		i=0
+		Variable ny=DimSize(dest,1)
+		do 
+			AppendToGraph dest[][i]
+			i+=1
+		while(i<ny)
+	Endif
 End
 
 // swap omega(x)-k(y) (calculated by DispersionAll_wave)=> k(y)-omega(k) 
@@ -1929,3 +1989,103 @@ Function func_ShowFunctionCmplxw(mode,m,wv0,re_start,re_end,im_start,im_end,zmin
 	func_ShowContour0(wv0)
 End
 
+// Plot vector from X and Y 2D wave
+Proc FieldArrowPlotXY(scale,num)
+	Variable scale=100,num=21
+	Func_FieldArrowPlotXY(scale,num)
+End
+
+Function Func_FieldArrowPlotXY(scale,num)
+	Variable scale,num
+	SVAR g_paramwv
+	Wave wv=$g_paramwv
+
+	Func_Show_Field_XY(num)
+	
+	String xdata="wfield_Ex",ydata="wfield_Ey"
+	PauseUpdate; Silent 1
+//	wave wxwave=$xdata,wywave=$ydata
+	Variable nx=DimSize($xdata,0),ny=DimSize($xdata,1)
+	Duplicate/O $xdata,wxtemp
+	Duplicate/O $ydata,wytemp
+	Duplicate/O $xdata,xcoordtemp
+	Duplicate/O $xdata,ycoordtemp
+	xcoordtemp=x
+	ycoordtemp=y
+	Redimension/N=(nx*ny) wxtemp
+	Redimension/N=(nx*ny) wytemp
+	Redimension/N=(nx*ny) xcoordtemp
+	Redimension/N=(nx*ny) ycoordtemp
+	Make/O/N=(nx*ny,2) wtempdata
+	wtempdata[][0]=sqrt(wxtemp[p]*wxtemp[p]+wytemp[p]*wytemp[p])*scale
+	wtempdata[][1]=atan2(wytemp[p],wxtemp[p])
+	
+	String grname="vectorGraph"
+	If(strlen(winlist(grname,";",""))==0)
+		Display ycoordtemp vs xcoordtemp
+		DoWindow/C $grname
+	Else
+		DoWindow/F $grname
+	endif
+	
+	ModifyGraph mode(ycoordtemp) = 3        // Marker mode
+	ModifyGraph arrowMarker(ycoordtemp) = {wtempdata, 1, 10, 1, 1}
+	ModifyGraph height={Aspect,1}
+	ModifyGraph tick=3,noLabel=2,standoff=0
+	ModifyGraph axThick=0
+
+End
+
+Proc FieldFromCursor_betaomega(modename,pp)
+	String modename
+	Variable pp=$g_paramwv[%'p']
+	Prompt modename,"mode name",popup,"hybrid;TE;TM;HE1;HEp;EHp;TETM"
+	Prompt pp,"mode number"
+	PauseUpdate;Silent 
+	
+	FFieldFromCursor_betaomega(modename,pp)
+End
+
+Function FFieldFromCursor_betaomega(modename,pp)
+	String modename
+	Variable pp
+	
+//	SVAR g_graphname
+//	DoWindow/F $g_graphname
+	Variable beta0 = vcsr(A),omega=hcsr(A)
+	Variable lambda0=2*pi/omega
+	print omega,lambda0,beta0
+	
+	SVAR g_paramwv
+	SVAR g_mode
+
+	g_mode=modename
+	Wave paramwv=$g_paramwv
+	Variable radius=paramwv[%'radius']
+	paramwv[%'lambda']=lambda0*radius
+	paramwv[%'p']=pp
+	SetBeta(beta0)
+	Variable phil
+
+	if(stringmatch(g_mode,"TE")==1)
+		phil=90
+		paramwv[%'phil']=phil*pi/180
+	endif
+	if(stringmatch(g_mode,"TM")==1)
+		phil=0
+		paramwv[%'phil']=phil*pi/180
+	endif
+End
+
+Function LambdaFromOmega(orig)
+	String orig
+	
+	String dest=orig+"_lambda"
+	Wave worig=$orig
+	Variable n
+	n=DimSize(worig,0)
+	Duplicate/O worig $dest
+	Wave wdest=$dest
+	Redimension/N=(n) wdest
+	Wdest=2*pi/x
+End
