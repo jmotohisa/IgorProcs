@@ -17,6 +17,10 @@
 // 		nameQWP_none_45.dat
 // 		nameQWP_none_135.dat
 
+//	revision history
+//		22/03/25 ver 0.2: Some method for Mueller caclculus added
+//		??/??/?? ver 0.1: first version
+
 Menu "GraphMarquee"
 	"Stokes ZoomIn all",FZoomInStokes()
 End
@@ -379,4 +383,145 @@ Function FResizeStokesImageAll(basename,imgsize)
 	DoWindow/F $wdwName
 	FResizeImages(imgsize)
 	
+End
+
+// Stokes parameters: Stokes parameters consist of 4 waves.
+//
+// Convert Ex and Ey into Stokes parameters (assume lineary polarized and S3=0)
+Function SfromExEy(basename,exname,eyname,fnorm)
+	String basename,exname,eyname
+	Variable fnorm
+
+	Wave wEx=$exname
+	Wave wEy=$eyname
+	String stokename
+	
+	stokename="S"+basename+"_S0"
+	Duplicate/O wEx,$stokename
+	Wave wS0=$stokename
+	stokename="S"+basename+"_S1"
+	Duplicate/O wEx,$stokename
+	Wave wS1=$stokename
+	stokename="S"+basename+"_S2"
+	Duplicate/O wEx,$stokename
+	Wave wS2=$stokename
+	stokename="S"+basename+"_S3"
+	Duplicate/O wEx,$stokename
+	Wave wS3=$stokename
+
+// S2=2*Ex*Ey*cos(gamma), S3=2*Ex*Ey*sin(gamma), and gamma=0 (or pi) for linearly polarized light
+
+	wS0=wEx^2+wEy^2
+	wS1=wEx^2-wEy^2
+	wS2=2*wEx*wEy
+	wS3=0
+	if(fnorm==1)
+		wS1/=wS0
+		wS2/=wS0
+	endif
+End
+
+// Mueller matrix
+// Linear polarizer (with polarization angle theta)
+Function MM_MakeLinPol(dest,theta)
+	String dest
+	Variable theta // in degree
+	Make/O/N=(4,4) $dest
+	Wave wdest=$dest
+	Variable th2=theta*pi/180*2
+	
+	wdest[0][0]=1
+	wdest[1][0]=cos(th2)
+	wdest[2][0]=sin(th2)
+	wdest[3][0]=0
+	wdest[0][1]=cos(th2)
+	wdest[1][1]=cos(th2)^2
+	wdest[2][1]=cos(th2)*sin(th2)
+	wdest[3][1]=0
+	wdest[0][2]=sin(th2)
+	wdest[1][2]=cos(th2)*sin(th2)
+	wdest[2][2]=sin(th2)^2
+	wdest[3][2]=0
+	wdest[0][3]=0
+	wdest[1][3]=0
+	wdest[2][3]=0
+	wdest[3][3]=0
+	wdest/=2
+End
+
+// Quater Waveplate (with polarization angle theta)
+Function MM_MakeQWP(dest,theta)
+	String dest
+	Variable theta // in degree
+	Make/O/N=(4,4) $dest
+	Wave wdest=$dest
+	Variable th2=theta*pi/180*2
+	
+	wdest[0][0]=1
+	wdest[1][0]=0
+	wdest[2][0]=0
+	wdest[3][0]=0
+	wdest[0][1]=0
+	wdest[1][1]=cos(th2)^2
+	wdest[2][1]=cos(th2)*sin(th2)
+	wdest[3][1]=sin(th2)
+	wdest[0][2]=0
+	wdest[1][2]=cos(th2)*sin(th2)
+	wdest[2][2]=sin(th2)^2
+	wdest[3][2]=-cos(th2)
+	wdest[0][3]=0
+	wdest[1][3]=-sin(th2)
+	wdest[2][3]=cos(th2)
+	wdest[3][3]=0
+End
+
+// Half Waveplate (with polarization angle theta)
+Function MM_MakeHWP(dest,theta)
+	String dest
+	Variable theta // in degree
+	Make/O/N=(4,4) $dest
+	Wave wdest=$dest
+	Variable th4=theta*pi/180*4
+	
+	wdest[0][0]=1
+	wdest[1][0]=0
+	wdest[2][0]=0
+	wdest[3][0]=0
+	wdest[0][1]=0
+	wdest[1][1]=cos(th4)
+	wdest[2][1]=sin(th4)
+	wdest[3][1]=0
+	wdest[0][2]=0
+	wdest[1][2]=sin(th4)
+	wdest[2][2]=-cos(th4)
+	wdest[3][2]=0
+	wdest[0][3]=0
+	wdest[1][3]=0
+	wdest[2][3]=0
+	wdest[3][3]=-1
+End
+
+// product of Mueller matrix and Stokes parameters (consisting of 4 waves)
+// (for product of Mueller matrix, use MatrixMultiply and copy M_product to desired wave)
+Function MulMMSP(dest_basename,MM,SP_basename)
+
+	String dest_basename,MM,SP_basename
+
+	String sname	
+	sname="S"+SP_basename+"_S0";Wave wS0=$sname
+	sname="S"+SP_basename+"_S1";Wave wS1=$sname
+	sname="S"+SP_basename+"_S2";Wave wS2=$sname
+	sname="S"+SP_basename+"_S3";Wave wS3=$sname
+	
+	sname="S"+dest_basename+"_S0";Duplicate/O wS0,$sname;Wave wS0_dest=$sname
+	sname="S"+dest_basename+"_S1";Duplicate/O wS0,$sname;Wave wS1_dest=$sname
+	sname="S"+dest_basename+"_S2";Duplicate/O wS0,$sname;Wave wS2_dest=$sname
+	sname="S"+dest_basename+"_S3";Duplicate/O wS0,$sname;Wave wS3_dest=$sname
+
+	Wave wMM=$MM
+	
+	wS0_dest = wMM[0][0]*wS0 + wMM[0][1]*wS1 + wMM[0][2]*wS2 + wMM[0][3]*wS3
+	wS1_dest = wMM[1][0]*wS0 + wMM[1][1]*wS1 + wMM[1][2]*wS2 + wMM[1][3]*wS3
+	wS2_dest = wMM[2][0]*wS0 + wMM[2][1]*wS1 + wMM[2][2]*wS2 + wMM[2][3]*wS3
+	wS3_dest = wMM[3][0]*wS0 + wMM[3][1]*wS1 + wMM[3][2]*wS2 + wMM[3][3]*wS3
 End

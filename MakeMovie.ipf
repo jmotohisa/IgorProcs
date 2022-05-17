@@ -257,3 +257,71 @@ Function FLoadWaveInList(twave_list,path)
 		i+=1
 	while(i<n)
 End
+
+Macro MakePlotMovie0(twindow,twave_list,frameRate,start,stop,step)
+	String twindow=g_twindow,twave_list=g_twave_list
+	Variable framerate=0.2,start,stop,step
+	Prompt twindow,"target window name"
+	Prompt twave,"target wave"
+	Prompt twave_list,"wave list"
+	Prompt framerate,"frame rate"
+	
+	
+End
+
+Function FMakePlotMovie0(twindow,twave_list,frameRate,start,stop,step,fcreate)
+	String twindow,twave_list
+	Variable framerate,start,stop,step,fcreate
+
+	Variable nframe=(stop-start)/step
+	Variable i
+	Wave/T wtwave_list=$twave_list
+	Variable n=DimSize(wtwave_list,0)
+
+	DoWindow/F $twindow
+	String ttwave
+	String worig,wdest
+	Variable nn,ii
+	for(i=0;i<nframe;i+=1)
+		if(i==0 && fcreate==1)
+			newmovie/O/F=(frameRate)
+		endif
+		nn=start+step*i
+		for(ii=0;ii<n;ii+=1)
+			worig=wtwave_list[ii]
+			wdest=worig+"_dup"
+			Wave orig=$worig,dest=$wdest
+			Duplicate/O/R=[0,nn] orig,dest
+//			dest[]=orig[0,nn]
+		
+//		ModifyGizmo ModifyObject=surface0,objectType=surface,property={ plane,i}
+//			ttwave=wtwave_list[i]
+//		Duplicate/O $ttwave,$twave
+		endfor
+//		print start,nn
+		DoUpdate
+		if(fcreate==1)
+			AddMovieFrame
+		endif
+	endfor
+	
+	if(fcreate==1)
+		closemovie
+	endif
+
+End
+
+Function FMakeDupWaves(twave_list)
+	String twave_list
+
+	Wave/T wtwave_list=$twave_list
+	String worig,wdest
+	Variable i,n=DimSize(wtwave_list,0)
+	for(i=0;i<n;i+=1)
+		worig=wtwave_list[i]
+		wdest=worig+"_dup"
+		Duplicate/O $worig,$wdest
+		wave dest
+//		dest=NaN
+	endfor	
+End

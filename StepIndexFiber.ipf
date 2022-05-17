@@ -484,8 +484,10 @@ Function Func_FindRootAll(modename)
 	Variable res,y1,y2
 	Variable i,j,nx=DimSize($g_funcwv,0)
 	String cmd
+	wave wv=$g_paramwv
+	Variable pp=wv[%'p']
 
-	func_function_calculate(modename)
+	func_function_calculate(modename,pp)
 //	sprintf cmd,"function_calculate0(\"%s\")",modename
 //	Execute cmd
 	Wave bracketwvL,bracketwvR,solwv,funcwv=$g_funcwv
@@ -588,6 +590,7 @@ Function Func_FindRoot(modename,pp,low,high,showgr,fquiet)
 	Variable k0=2*pi/wv[%'lambda'],uu,ww
 	Variable res,y1,y2
 //	paramwv=g_paramwv
+	wv[%'p']=pp
 	g_mode=modename
 	if(stringmatch(modename, "TE")==1 || stringmatch(modename,"TM")==1)
 		pp=0
@@ -604,7 +607,7 @@ Function Func_FindRoot(modename,pp,low,high,showgr,fquiet)
 //	print $paramwv[%'betamin'],low,high
 	if(showgr==1)
 //		cmd="Proc_ShowFunction(modename)"
-		Func_ShowFunction(modename)
+		Func_ShowFunction(modename,pp)
 //		Execute cmd
 	Endif
 	print "wavelenth=",wv[%'lambda'],"k=",k0
@@ -682,18 +685,21 @@ Function/D Func_FindRoot000(modename,wv,low,high,fquiet)
 End Function
 
 ///////////////////////// show graphs
-Proc Proc_ShowFunction(modename)
+Proc Proc_ShowFunction(modename,pp)
 	String modename=g_mode
+	Variable pp=$g_paramwv[%'p']
 	Prompt modename,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
+	prompt pp,"mode Number"
 	PauseUpdate;Silent 1
 	
-	Func_ShowFunction(modename)
+	Func_ShowFunction(modename,pp)
 End
 
-Function Func_ShowFunction(modename)
+Function Func_ShowFunction(modename,pp)
 	String modename
+	Variable pp
 		
-	func_function_calculate(modename)
+	func_function_calculate(modename,pp)
 	ShowFuncGraphWin()
 End
 
@@ -1194,8 +1200,9 @@ Proc funciton_calculate(modename)
 	func_function_calculate(modename)
 End
 
-Function func_function_calculate(modename)
+Function func_function_calculate(modename,pp)
 	String modename
+	Variable pp
 	
 	SVAR g_paramwv,g_funcwv
 	Wave wv=$g_paramwv
@@ -1205,6 +1212,7 @@ Function func_function_calculate(modename)
 	n1=wv[%'n1']
 	n2=wv[%'n2']
 	wl=wv[%'lambda']
+	wv[%'p']=pp
 	SetParamwv_recalc(wl,n1,n2)
 	
 	betamin=wv[%'betamin0']
