@@ -482,3 +482,57 @@ Function MakeGainPhase(wvorig,index,wvgain,wvphase,wvfreq)
 	Label left2 "phase (\\U)"
 	SetAxis left2 -180,180
 End
+
+// for splitting of transient data
+
+// (1) Find time discontinuity in xdata wave using FSearchSplitPoints
+// (2) duplicate xdata and ydata wave
+// (3) Run FSplitPoints
+Function FSearchSplitPoints(wv)
+	String wv
+	
+	Variable th=0
+	Make/D tempSplitNum
+	Wave wwv=$wv
+	String dwv=wv+"_dummy"
+	Duplicate/O wwv,$dwv
+	Wave ddwv=$dwv
+	Differentiate/METH=1 ddwv
+	Variable i,n=DimSize(ddwv,0),i0=0
+	for(i=0;i<n;i++)
+		if(ddwv[i]<-th)
+			print i
+			tempSplitNum[i0]=i
+			i0+=1
+		endif
+	endfor
+
+	Redimension/N=(i0) tempSplitnum	
+End
+
+// normally, plist is "tempSplitnum"
+Function FSplitPoints(orig,dest,plist)
+	String orig,dest,plist
+	
+	Wave worig=$orig
+	Wave wplist=$plist
+	Variable n=DimSize(wplist,0),i,i0=0
+	Variable nstart0,nend0,nstart1,nend1
+	String dest0
+	
+	for(i=0;i<=n;i++)
+		dest0=dest+"_"+num2str(i)
+		Duplicate/O worig,$dest0
+		Wave wdest0=$dest0
+		if(i!=n)
+			nstart0=wplist[i]+1
+			nend0=DimSize(worig,0)
+			Deletepoints nstart0,nend0,wdest0
+		endif
+		if(i>=1)
+			nend1=wplist[i-1]+1
+			Deletepoints 0,nend1,wdest0
+		endif
+	endfor
+	
+End

@@ -158,7 +158,7 @@ Function SetParamwv_recalc(wl,n1,n2)
 	wv[%'betamax']=(2*pi/wl*n1)
 	wv[%'betamin0']=wv[%'betamin']*1.00000001
 	wv[%'betamax0']=wv[%'betamax']*0.99999999
-	wv[%'delta']=sqrt((n1*n1-n2*n2)/2)/n1
+	wv[%'delta']=(n1*n1-n2*n2)/(2*n1*n1)
 	wv[%'V']=2*pi/wv[%'lambda']*sqrt(n1*n1-n2*n2)*wv[%'radius']
 	wv[%'lambda_c']=2*pi/2.405*n1*sqrt(wv[%'delta']*2)*wv[%'radius']
 End	
@@ -1326,22 +1326,23 @@ Proc init_calc_dispersion_omg(start,mode,nmode)
 	Func_ShowFunction(mode)
 End
 
-Proc calculate_dispersion_LambdaBeta(wvname,mode,start,stop,usecsr,stoperror)
+Proc calculate_dispersion_LambdaBeta(wvname,mode,start,stop,usecsr,stoperror,pdisp)
 	String wvname,mode=g_mode
-	Variable start=g_wl1,stop=g_wl2,usecsr=1,stoperror
+	Variable start=g_wl1,stop=g_wl2,usecsr=1,stoperror,pdisp=2
 	Prompt wvname, "wave name"
 	Prompt mode,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
 	Prompt start,"staring wavelength"
 	Prompt stop,"ending wavelength"
 	Prompt usecsr,"bracket with cursor ?",popup,"yes;no"
 	Prompt stoperror, "stop on error ?",popup,"yes;no"
+	Prompt pdisp,"display graph ?",popup,"no;yes;append"
 	PauseUpdate; Silent 1
 	
 	Make/O $wvname
 	SetScale/I x start,stop,"nm", $wvname
 	g_wl1=start
 	g_wl2=stop
-	calculate_dispersion_wave(wvname,mode,usecsr,0,stoperror)
+	calculate_dispersion_wave(wvname,mode,usecsr,0,stoperror,pdisp)
 End
 
 // dispersion for normalized omega-beta; set radius 1
