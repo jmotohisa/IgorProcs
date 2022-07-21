@@ -9,6 +9,7 @@
 //	09/11/15 ver. 0.1b by J. Motohisa
 //
 //	revision history
+//		22/07/21 ver 0.5: critical bug fixed: TE and TM were flipped !!!! (version 0.4 was wrong !!!!)
 //		22/03/23 ver 0.4: critical bug fixed: TE and TM were flipped !!!!
 //		13/08/22 ver 0.3c: bug fixed in DispersionAll_wave
 //		13/06/26 ver 0.3b: field in the RZ plane added, bug in field for TE mode fixed
@@ -359,13 +360,11 @@ End Function
 Function/D func_TE_0(wv,beta0)
 	Wave wv
 	Variable/D beta0
-	Variable/D uu,ww,n1,n2
+	Variable/D uu,ww
 	uu=u_func0(wv,beta0)
 	ww=w_func0(wv,beta0)
-	n1=wv[%'n1']
-	n2=wv[%'n2']
-	Return(n1*n1/(n2*n2)*(-BesselJ(1,uu))*ww*BesselK(0,ww)-BesselK(1,ww)*uu*BesselJ(0,uu))
-//	Return(uu*BesselJ(0,uu)*BesselK(1,ww)+BesselJ(1,uu)*w*besselK(0,ww))
+//	Return (uu*BesselJ(0,uu)*BesselK(1,ww)+BesselJ(1,uu)*w*besselK(0,ww))
+	Return((-BesselJ(1,uu))*ww*BesselK(0,ww)-BesselK(1,ww)*uu*BesselJ(0,uu))
 End
 
 // TM mode
@@ -379,10 +378,12 @@ End Function
 Function/D func_TM_0(wv,beta0)
 	Wave wv
 	Variable/D beta0
-	Variable/D uu,ww,pp
+	Variable/D uu,ww,n1,n2
 	uu=u_func0(wv,beta0)
 	ww=w_func0(wv,beta0)
-	Return((-BesselJ(1,uu))*ww*BesselK(0,ww)-BesselK(1,ww)*uu*BesselJ(0,uu))
+	n1=wv[%'n1']
+	n2=wv[%'n2']
+	Return(n1*n1/(n2*n2)*(-BesselJ(1,uu))*ww*BesselK(0,ww)-BesselK(1,ww)*uu*BesselJ(0,uu))
 End
 
 ///////////////////// find root
@@ -391,7 +392,7 @@ Proc Proc_FindRoot(modename,pp,low,high,showgr,fquiet,stoperror)
 	Variable/D pp=$g_paramwv[%'p'],low=-1,high=-1
 	Variable showgr=1,fquiet=2
 	Variable stoperror
-	Prompt modename,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
+	Prompt modename,"Name of the mode",popup,"hybrid;TE;TM;HE1;HEp;EHp;TETM"
 	Prompt pp,"mode number"
 	Prompt low,"lowest value"
 	Prompt high,"highest value"
@@ -554,7 +555,7 @@ Proc Proc_FindRoot_csr(modename,pp,showgr,fquiet)
 	String modename=g_mode
 	Variable/D pp=$g_paramwv[%'p']
 	Variable showgr=1,fquiet=2
-	Prompt modename,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
+	Prompt modename,"Name of the mode",popup,"hybrid;TE;TM;HE1;HEp;EHp;TETM"
 	Prompt pp,"mode number"
 	Prompt showgr,"Show Eigenvalue Eq. Graph ?",popup,"yes;no" 
 	Prompt fquiet,"quiet ?",popup,"yes;no"
@@ -688,7 +689,7 @@ End Function
 Proc Proc_ShowFunction(modename,pp)
 	String modename=g_mode
 	Variable pp=$g_paramwv[%'p']
-	Prompt modename,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
+	Prompt modename,"Name of the mode",popup,"hybrid;TE;TM;HE1;HEp;EHp;TETM"
 	prompt pp,"mode Number"
 	PauseUpdate;Silent 1
 	
@@ -1194,7 +1195,7 @@ End Function
 // calcualate function of eigenmode equation for given mode and given parameters
 Proc funciton_calculate(modename)
 	String modename=g_mode
-	Prompt modename,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
+	Prompt modename,"Name of the mode",popup,"hybrid;TE;TM;HE1;HEp;EHp;TETM"
 	PauseUpdate;Silent 1
 	
 	func_function_calculate(modename)
