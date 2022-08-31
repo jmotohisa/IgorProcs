@@ -48,11 +48,12 @@ End
 //  g_modename: 
 
 Proc Init_StepIndexFiber(paramwv,funcwv,graphname,modename)
-	String paramwv="param_StepIndexFiber",funcwv="func_StepIndexFiber",graphname="graph_StepIndexFiber",modename="hybrid"
+	String paramwv="param_StepIndexFiber",funcwv="func_StepIndexFiber",graphname="graph_StepIndexFiber",
+	String modename="hybrid"
 	Prompt paramwv,"parameter wave name"
 	Prompt funcwv,"function wave name"
 	Prompt graphname,"Graph name"
-	Prompt modename,"mode name",popup,"hybrid;TE;TM;HE1;HEp;EHp;TETM"
+	Prompt modename,"mode name",popup,"hybrid;HE;EH;TE;TM;HE1;HEp;EHp;TETM"
 	PauseUpdate;Silent 1
 
 	String cmd
@@ -88,6 +89,8 @@ Proc Init_StepIndexFiber(paramwv,funcwv,graphname,modename)
 	
 	Make/O/D/N=1001 $funcwv //
 	Make/O/D/N=1001 $(funcwv+"_hybrid") // hybrid mode
+	Make/O/D/N=1001 $(funcwv+"_HE") // TE mode
+	Make/O/D/N=1001 $(funcwv+"_EH") // TM mode
 	Make/O/D/N=1001 $(funcwv+"_TE") // TE mode
 	Make/O/D/N=1001 $(funcwv+"_TM") // TM mode
 // weakly guided approximation
@@ -324,7 +327,7 @@ End
 //////////
 // general case
 
-//hybrid mode
+//hybrid mode: both HE and EH
 Function func_hybrid(beta0)
 	Variable/D beta0
 	SVAR g_paramwv
@@ -347,6 +350,62 @@ Function/D func_hybrid_0(wv,beta0)
 //	e0=(BesselJ(pp-1,uu)-BesselJ(pp+1,uu))/2/(BesselJ(pp,uu))*ww*ww*uu
 //	e1=-(BesselK(pp-1,ww)+BesselK(pp+1,ww))/2/(BesselK(pp,ww))*uu*uu*ww
 //	return((e0+e1)*(n1*n1*e0+n2*n2*e1)-pp*pp*(ww*ww+(uu*uu))^2*beta0*beta0/(k0*k0))
+End
+
+
+Function func_HE(beta0)
+	Variable/D beta0
+	SVAR g_paramwv
+	return(func_HE_0($g_paramwv,beta0))
+End
+
+Function/D func_HE_0(wv,beta0)
+	Wave wv
+	Variable/D beta0
+	Variable/D uu,ww,n1,n2,pp,e0,e1,k0
+	Variable e00,e01
+	Variable c1,c2
+	uu=u_func0(wv,beta0)
+	ww=w_func0(wv,beta0)
+	n1=wv[%'n1']
+	n2=wv[%'n2']
+	pp=wv[%'p']
+	k0=2*pi/wv[%'lambda']
+	e00=(uu*BesselJ(pp,uu));
+	e01=(ww*BesselK(pp,ww));
+	e0= (BesselJ(pp-1,uu));
+	e1=-(BesselK(pp-1,ww)+BesselK(pp+1,ww))/(2*e01);
+	c1=(n1*n1-n2*n2)/(2*n1*n1)*e1;
+	c2=pp*beta0/(n1*k0)*(1/(uu*uu)+1/(ww*ww));
+  return e0+((n1*n1+n2*n2)/(2*n1*n1)*e1-(pp/(uu*uu)-sqrt(c1*c1+c2*c2)))*e00;
+
+End
+
+Function func_EH(beta0)
+	Variable/D beta0
+	SVAR g_paramwv
+	return(func_EH_0($g_paramwv,beta0))
+End
+
+Function/D func_EH_0(wv,beta0)
+	Wave wv
+	Variable/D beta0
+	Variable/D uu,ww,n1,n2,pp,e0,e1,k0
+	Variable e00,e01
+	Variable c1,c2
+	uu=u_func0(wv,beta0)
+	ww=w_func0(wv,beta0)
+	n1=wv[%'n1']
+	n2=wv[%'n2']
+	pp=wv[%'p']
+	k0=2*pi/wv[%'lambda']
+	e00=(uu*BesselJ(pp,uu));
+	e01=(ww*BesselK(pp,ww));
+	e0= (BesselJ(pp+1,uu));
+	e1=-(BesselJ(pp-1,ww)+BesselK(pp+1,ww))/(2*e01);
+	c1=(n1*n1-n2*n2)/(2*n1*n1)*e1;
+	c2=pp*beta0/(n1*k0)*(1/(uu*uu)+1/(ww*ww));
+	return e0-((n1*n1+n2*n2)/(2*n1*n1)*e1+(pp/(uu*uu)-sqrt(c1*c1+c2*c2)))*e00;
 End
 
 // TE mode
@@ -392,7 +451,7 @@ Proc Proc_FindRoot(modename,pp,low,high,showgr,fquiet,stoperror)
 	Variable/D pp=$g_paramwv[%'p'],low=-1,high=-1
 	Variable showgr=1,fquiet=2
 	Variable stoperror
-	Prompt modename,"Name of the mode",popup,"hybrid;TE;TM;HE1;HEp;EHp;TETM"
+	Prompt modename,"Name of the mode",popup,"hybrid;HE;EH;TE;TM;HE1;HEp;EHp;TETM"
 	Prompt pp,"mode number"
 	Prompt low,"lowest value"
 	Prompt high,"highest value"
@@ -555,7 +614,7 @@ Proc Proc_FindRoot_csr(modename,pp,showgr,fquiet)
 	String modename=g_mode
 	Variable/D pp=$g_paramwv[%'p']
 	Variable showgr=1,fquiet=2
-	Prompt modename,"Name of the mode",popup,"hybrid;TE;TM;HE1;HEp;EHp;TETM"
+	Prompt modename,"Name of the mode",popup,"hybrid;HE;EH;TE;TM;HE1;HEp;EHp;TETM"
 	Prompt pp,"mode number"
 	Prompt showgr,"Show Eigenvalue Eq. Graph ?",popup,"yes;no" 
 	Prompt fquiet,"quiet ?",popup,"yes;no"
@@ -689,7 +748,7 @@ End Function
 Proc Proc_ShowFunction(modename,pp)
 	String modename=g_mode
 	Variable pp=$g_paramwv[%'p']
-	Prompt modename,"Name of the mode",popup,"hybrid;TE;TM;HE1;HEp;EHp;TETM"
+	Prompt modename,"Name of the mode",popup,"hybrid;HE;EH;TE;TM;HE1;HEp;EHp;TETM"
 	prompt pp,"mode Number"
 	PauseUpdate;Silent 1
 	
@@ -1195,7 +1254,7 @@ End Function
 // calcualate function of eigenmode equation for given mode and given parameters
 Proc funciton_calculate(modename)
 	String modename=g_mode
-	Prompt modename,"Name of the mode",popup,"hybrid;TE;TM;HE1;HEp;EHp;TETM"
+	Prompt modename,"Name of the mode",popup,"hybrid;HE;EH;TE;TM;HE1;HEp;EHp;TETM"
 	PauseUpdate;Silent 1
 	
 	func_function_calculate(modename)
@@ -1304,7 +1363,7 @@ End
 Proc initialize_calculate_dispersion(start,mode,nmode)
 	String mode=g_mode
 	Variable start=g_wl1,nmode=1
-	Prompt mode,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
+	Prompt mode,"Name of the mode",popup,"hybrid;HE;EH;TE;TM;HE1;HEp;EHp;TETM"
 	Prompt start,"staring wavelength"
 	Prompt nmode,"mode number"
 	PauseUpdate;Silent 1
@@ -1317,7 +1376,7 @@ End
 Proc init_calc_dispersion_omg(start,mode,nmode)
 	String mode=g_mode
 	Variable start=g_om2,nmode=1
-	Prompt mode,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
+	Prompt mode,"Name of the mode",popup,"hybrid;HE;EH;TE;TM;HE1;HEp;EHp;TETM"
 	Prompt start,"staring wavelength"
 	Prompt nmode,"mode number"
 	PauseUpdate;Silent 1
@@ -1331,7 +1390,7 @@ Proc calculate_dispersion_LambdaBeta(wvname,mode,start,stop,usecsr,stoperror,pdi
 	String wvname,mode=g_mode
 	Variable start=g_wl1,stop=g_wl2,usecsr=1,stoperror,pdisp=2
 	Prompt wvname, "wave name"
-	Prompt mode,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
+	Prompt mode,"Name of the mode",popup,"hybrid;HE;EH;TE;TM;HE1;HEp;EHp;TETM"
 	Prompt start,"staring wavelength"
 	Prompt stop,"ending wavelength"
 	Prompt usecsr,"bracket with cursor ?",popup,"yes;no"
@@ -1351,7 +1410,7 @@ Proc calculate_dispersion_OmegaBeta(wvname,mode,start,stop,usecsr,stoperror,pdis
 	String wvname,mode=g_mode
 	Variable start=0.01,stop=2,usecsr=1,stoperror=2,pdisp=2
 	Prompt wvname, "wave name"
-	Prompt mode,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
+	Prompt mode,"Name of the mode",popup,"hybrid;HE;EH;TE;TM;HE1;HEp;EHp;TETM"
 	Prompt start,"staring omega"
 	Prompt stop,"ending omega"
 	Prompt usecsr,"bracket with cursor ?",popup,"yes;no"
@@ -1370,7 +1429,7 @@ Proc calculate_dispersion_wave(wname,mode,usecsr,xmode,stoperror,pdisp)
 	String wname,mode=g_mode
 	Variable usecsr=1,xmode=0,stoperror=2,pdisp=2
 	Prompt wname, "wave name"
-	Prompt mode,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
+	Prompt mode,"Name of the mode",popup,"hybrid;HE;EH;TE;TM;HE1;HEp;EHp;TETM"
 	Prompt usecsr,"bracket with cursor ?",popup,"yes;no"
 	Prompt stoperror,"stop on error ?",popup,"yes;no"
 	Prompt pdisp,"display graph ?",popup,"no;yes;append"
@@ -1423,7 +1482,7 @@ Proc Dispersion_OmegaBetaAll(wname,mode,pmode,start,stop,nmax,pdisp)
 	Variable start=0.4,stop=2,nmax=5
 	Variable pmode=1,pdisp
 	Prompt wname, "wave name"
-	Prompt mode,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
+	Prompt mode,"Name of the mode",popup,"hybrid;HE;EH;TE;TM;HE1;HEp;EHp;TETM"
 	Prompt pmode,"mode number"
 	Prompt start,"staring omega"
 	Prompt stop,"ending omega"
@@ -1441,7 +1500,7 @@ Function DispersionAll_wave(wname,modename,pmode,xmode,pdisp)
 	Variable pmode,xmode,pdisp
 //	Prompt wname,"wave name"
 //	Prompt nmax,"maximum number of mode"
-//	Prompt modename,"Name of the mode",popup,"HE1;HEp;EHp;TETM;TE;TM;hybrid"
+//	Prompt modename,"Name of the mode",popup,"hybrid;HE;EH;TE;TM;HE1;HEp;EHp;TETM"
 //	Prompt xmode,"x is ?",popup,"wavelength;norm. omega"
 //	PauseUpdate;Silent 1
 	
@@ -2049,7 +2108,7 @@ End
 Proc FieldFromCursor_betaomega(modename,pp)
 	String modename
 	Variable pp=$g_paramwv[%'p']
-	Prompt modename,"mode name",popup,"hybrid;TE;TM;HE1;HEp;EHp;TETM"
+	Prompt modename,"mode name",popup,"hybrid;HE;EH;TE;TM;HE1;HEp;EHp;TETM"
 	Prompt pp,"mode number"
 	PauseUpdate;Silent 
 	
@@ -2098,4 +2157,12 @@ Function LambdaFromOmega(orig)
 	Wave wdest=$dest
 	Redimension/N=(n) wdest
 	Wdest=2*pi/x
+End
+
+Function/S mode_modename(mode)
+	Variable mode;
+	String modestr="hybrid;HE;EH;TE;TM;HE1;HEp;EHp;TETM"
+	String modename
+	modename=StringFromList(mode,modestr,";")
+	return modename
 End
