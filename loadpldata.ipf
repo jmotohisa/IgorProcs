@@ -160,6 +160,127 @@ Function FMultiPLdataLoad(thePath, wantToPrint,flag,flag2)
 	while (gotFile)									// until TextFile runs out of files
 End
 
+Macro LoadPLdata_csv(fileName,pathName,wvnamey,flag2)
+	String fileName, pathName="home", wvname
+	Variable flag2=1;
+	Prompt flag2,"equal wavelength spacing ?", popup,"yes;intepolate;no"
+	Silent 1; PauseUpDate
+	
+	FLoadPLdata_csv(fileName,pathName,wvnamey,flag2)
+EndMacro
+
+Function/T FLoadPLdata_csv(fileName,pathName,wvnamey,flag2)
+	String fileName, pathName, wvnamey
+	Variable flag2;
+
+	String w0,w1,w2,wvnameyL
+	Variable ref,numpoints
+	String retstr=""
+	
+	if (strlen(fileName)<=0)
+		Open /D/R/P=$pathName/T=".csv" ref
+		fileName= S_fileName
+	endif
+	
+	LoadWave/G/D/A/W/O/P=$pathName fileName
+		if(V_flag==0)
+		return(retstr) 
+	endif
+	
+	w0 = StringFromList(1,S_waveNames,";")	// wavelength
+	w1 = StringFromList(2,S_waveNames,";")	// channel x
+
+	Sort $w0, $w0, $w1
+	WaveStats/Q $w0
+	SetScale/I x,V_min,V_max,"nm",$w0,$w1
+	
+	if(flag2==1)
+		KillWaves $w0
+	else
+		if(flag2==2)
+			numpoints = numpnts($w0)
+			XYtoWave2($w0,$w1,"tempx",numpoints)
+			KillWaves $w0,$w1,$w2
+			Rename $"tempx",$w1
+		endif
+	endif
+
+	wvnameyL="L"+wvnamey
+	retstr=wvnameyL
+	if (strlen(wvnamey)<1)
+		wvnamey="W"+wname(fileName)
+		wvnameyL="L"+wname(fileName)
+		retstr=wvnamey
+	endif
+
+	print wvnamey
+	Rename $w1,$wvnamey
+	
+	Duplicate/O $wvnamey,dummywave0
+	if(flag2==2)
+		Duplicate/O $wvnamey,dummyxwave
+		Duplicate/O $wvnameyL,dummyywave		
+	endif
+	
+	return(retstr)
+End
+
+Macro MultiPLdataLoad_csv(thePath, wantToPrint,flag2)
+	String thePath="_New Path_"
+	Variable wantToPrint=2
+	Variable flag2=1
+	Prompt thePath, "Name of path containing text files", popup, PathList("*", ";", "")+"_New Path_"
+	Prompt wantToPrint, "Do you want to print graphs?", popup, "Yes;No"
+	Prompt flag2,"equal wavelength spacing ?", popup,"yes;intepolate;no"
+	PauseUpdate;Silent 1
+	
+	FMultiPLdataLoad_csv(thePath, wantToPrint,flag2)
+EndMacro
+
+Function FMultiPLdataLoad_csv(thePath, wantToPrint,flag2)
+	String thePath
+	Variable wantToPrint,flag2
+
+	String ftype=".csv"
+	String fileName
+	Variable fileIndex=0, gotFile
+	
+	if (CmpStr(thePath, "_New Path_") == 0)		// user selected new path ?
+		NewPath/O data			// this brings up dialog and creates or overwrites path
+		thePath = "data"
+	endif
+	
+	if(flag2==2)
+		DoWindow /F Graphplotxy							// make sure Graphplot is front window
+		if (V_flag == 0)								// Graphplot does not exist?
+			Make/N=2/D/O dummyxwave0
+			Make/N=2/D/O dummyywave0
+			FGraphplotxy("wavelength","intensity")									// create it
+		endif
+	else
+		DoWindow /F Graphplot							// make sure Graphplot is front window
+		if (V_flag == 0)								// Graphplot does not exist?
+			Make/N=2/D/O dummywave0
+			FGraphplot("wavelength","intensity")									// create it
+		endif
+	endif
+
+	do
+		fileName = IndexedFile($thePath,fileIndex,ftype)			// get name of next file in path
+		gotFile = CmpStr(fileName, "")
+		if (gotFile)
+			FLoadPLdata_csv(fileName,thePath,"",flag2)
+			//LoadWave/G/P=$thePath/O/N=wave fileName		// load the waves from file
+			Textbox/C/N=tb_file/F=0/A=MT/X=-30/Y=5 "File: "+fileName
+			DoUpdate		// make sure graph updated before printing
+			if (wantToPrint == 1)
+				Execute("PrintGraphs/R Graphplot(2, 2, 98, 98)/F=1")	// print graph
+			endif
+		endif
+		fileIndex += 1
+	while (gotFile)									// until TextFile runs out of files
+End
+
 // Macro to load PL data taken by spectramax program 
 //      (SPC file with extention of "SPC")
 
