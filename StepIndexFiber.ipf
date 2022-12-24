@@ -352,7 +352,7 @@ Function/D func_hybrid_0(wv,beta0)
 //	return((e0+e1)*(n1*n1*e0+n2*n2*e1)-pp*pp*(ww*ww+(uu*uu))^2*beta0*beta0/(k0*k0))
 End
 
-
+// HE mode
 Function func_HE(beta0)
 	Variable/D beta0
 	SVAR g_paramwv
@@ -381,6 +381,7 @@ Function/D func_HE_0(wv,beta0)
 
 End
 
+//EH mode
 Function func_EH(beta0)
 	Variable/D beta0
 	SVAR g_paramwv
@@ -402,10 +403,52 @@ Function/D func_EH_0(wv,beta0)
 	e00=(uu*BesselJ(pp,uu));
 	e01=(ww*BesselK(pp,ww));
 	e0= (BesselJ(pp+1,uu));
-	e1=-(BesselJ(pp-1,ww)+BesselK(pp+1,ww))/(2*e01);
+	e1=-(BesselK(pp-1,ww)+BesselK(pp+1,ww))/(2*e01);
 	c1=(n1*n1-n2*n2)/(2*n1*n1)*e1;
 	c2=pp*beta0/(n1*k0)*(1/(uu*uu)+1/(ww*ww));
 	return e0-((n1*n1+n2*n2)/(2*n1*n1)*e1+(pp/(uu*uu)-sqrt(c1*c1+c2*c2)))*e00;
+End
+
+//HE mode in Weakly Guiding Approximation
+Function func_HEWGA(beta0)
+	Variable/D beta0
+	SVAR g_paramwv
+	return(func_HEWGA_0($g_paramwv,beta0))
+End
+
+Function/D func_HEWGA_0(wv,beta0)
+	Wave wv
+	Variable/D beta0
+	Variable/D uu,ww,n1,n2,pp,e0,e1,k0
+	Variable e00,e01
+	Variable c1,c2
+	uu=u_func0(wv,beta0)
+	ww=w_func0(wv,beta0)
+	n1=wv[%'n1']
+	n2=wv[%'n2']
+	pp=wv[%'p']
+	return BesselJ(pp-1,uu)*ww*BesselK(pp,ww)-uu*BesselJ(pp,uu)*BesselK(pp-1,ww)
+End
+
+//EH mode in Weakly Guiding Approximation
+Function func_EHWGA(beta0)
+	Variable/D beta0
+	SVAR g_paramwv
+	return(func_HEWGA_0($g_paramwv,beta0))
+End
+
+Function/D func_EHWGA_0(wv,beta0)
+	Wave wv
+	Variable/D beta0
+	Variable/D uu,ww,n1,n2,pp,e0,e1,k0
+	Variable e00,e01
+	Variable c1,c2
+	uu=u_func0(wv,beta0)
+	ww=w_func0(wv,beta0)
+	n1=wv[%'n1']
+	n2=wv[%'n2']
+	pp=wv[%'p']
+	return BesselJ(pp+1,uu)*ww*BesselK(pp,ww)+uu*BesselJ(pp,uu)*BesselK(pp+1,ww)
 End
 
 // TE mode
@@ -562,6 +605,7 @@ Function Func_FindRootAll(modename)
 		if(y1*y2<0)
 			bracketwvL[j]=pnt2x(funcwv,i-1)
 			bracketwvR[j]=pnt2x(funcwv,i)
+//			print j,bracketwvL[j],bracketwvR[j]
 //			sprintf cmd,"FindRoots/Q/L=%g/H=%g func_%s_0,%s",bracketwvL[j],bracketwvR[j],modename,g_paramwv
 //			Execute cmd
 			j+=1
