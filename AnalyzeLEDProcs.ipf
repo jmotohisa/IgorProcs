@@ -242,3 +242,24 @@ Macro ShowNplot2(wvname,temperature,Rs)
 //	ShowInfo
 //	g_wvname=wvname
 End
+
+Function FShowIVsemilog(wvname,mode)
+	String wvname
+	Variable mode
+	
+	String dest=wvname+"_abs"
+	Wave wwvname=$wvname
+	Duplicate/O wwvname,$dest
+	Wave wdest=$dest
+	wdest=abs(wwvname)
+	if(mode==1)
+		Display
+	Endif
+	if(mode==3)
+		AppendToGraph/R wdest
+		ModifyGraph log(right)=1
+	else
+		AppendToGraph wdest
+		ModifyGraph log(left)=1
+	Endif
+End

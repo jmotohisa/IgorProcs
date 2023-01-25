@@ -173,6 +173,7 @@ Macro LoadDelftDataAll(pathName,scalex,scaley,numdat,wantToDisp,convmat,iformat,
 	Prompt dsetnm,"data set name"
 
 	Silent 1; PauseUpDate
+	Variable/G g_DSOindex
 	FLoadDelftDataAll(pathName,scalex,scaley,numdat,wantToDisp,convmat,iformat,fdso,dsetnm)
 End
 
