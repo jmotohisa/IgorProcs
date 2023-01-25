@@ -406,7 +406,7 @@ Function MakeCurves_Fityk(bname,xwv,dfname)
 End
 
 // make single curves
-Function/T MakeACurve_Fityk_Gaussian(bname,index,xwv)
+Function/S MakeACurve_Fityk_Gaussian(bname,index,xwv)
 	String bname,xwv
 	Variable index
 	

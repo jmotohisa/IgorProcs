@@ -20,7 +20,7 @@ Macro LoadPLdata(fileName,pathName,wvnamey,flag,flag2)
 	FLoadPLdata(fileName,pathName,wvnamey,flag,flag2)
 EndMacro
 
-Function/T FLoadPLdata(fileName,pathName,wvnamey,flag,flag2)
+Function/S FLoadPLdata(fileName,pathName,wvnamey,flag,flag2)
 	String fileName, pathName, wvnamey
 	Variable flag,flag2;
 
@@ -227,7 +227,7 @@ Macro LoadPLdata_csv(fileName,pathName,wvnamey,flag2)
 	FLoadPLdata_csv(fileName,pathName,wvnamey,flag2)
 EndMacro
 
-Function/T FLoadPLdata_csv(fileName,pathName,wvnamey,flag2)
+Function/S FLoadPLdata_csv(fileName,pathName,wvnamey,flag2)
 	String fileName, pathName, wvnamey
 	Variable flag2;
 
@@ -573,7 +573,7 @@ Macro LoadPRNfileData(wvnamey,fileName,pathName,flag)
 	FLoadPRNfileData(wvnamey,fileName,pathName,flag)
 EndMacro
 
-Function/T FLoadPRNfileData(wvnamey,fileName,pathName,flag)
+Function/S FLoadPRNfileData(wvnamey,fileName,pathName,flag)
 	String fileName, pathName, wvnamey
 	Variable flag
 
@@ -675,7 +675,7 @@ End
 //		0 "W"+tmpname
 //		>0
 //		<0
-Function/T DSONameWave1(fileName,which,DSname,fileIndex,nmschm,index,flag)
+Function/S DSONameWave1(fileName,which,DSname,fileIndex,nmschm,index,flag)
 	String filename,which,DSName
 	Variable fileIndex,nmschm,index,flag
 
@@ -700,7 +700,7 @@ Function/T DSONameWave1(fileName,which,DSname,fileIndex,nmschm,index,flag)
 	return name
 End
 
-Function/T DSONameWave2(name,file,which,nmschm)
+Function/S DSONameWave2(name,file,which,nmschm)
 	String name,file,which
 	Variable nmschm
 	
@@ -734,7 +734,7 @@ Function/T DSONameWave2(name,file,which,nmschm)
 	return name
 End
 
-Function/T DSONameWave_x(name,nmschm)
+Function/S DSONameWave_x(name,nmschm)
 	String name
 	Variable nmschm
 	
@@ -746,7 +746,7 @@ Function/T DSONameWave_x(name,nmschm)
 	return name
 End
 
-Function/T DSONameWave_y(name,nmschm)
+Function/S DSONameWave_y(name,nmschm)
 	String name
 	Variable nmschm
 	

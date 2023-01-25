@@ -38,7 +38,7 @@ Macro LoadDelftData(fileName,pathName,scalex,scaley,numdat,wantToDisp,convMat,if
 	FLoadDelftData(fileName,pathName,scalex,scaley,numdat,wantToDisp,convMat,iformat)
 End
 
-Function/T FLoadDelftData(fileName,pathName,scalex,scaley,numdat,wantToDisp,convMat,iformat)
+Function/S FLoadDelftData(fileName,pathName,scalex,scaley,numdat,wantToDisp,convMat,iformat)
 	String fileName
 	String pathName
 	Variable scalex,scaley,wantToDisp,convMat,numdat,iformat
@@ -270,7 +270,7 @@ Macro PrintDelftDataComment(filename,pathname)
 	close ref
 End	
 	
-Function/T FindScanNum(fileVar,scanNum)	// search for start of scan
+Function/S FindScanNum(fileVar,scanNum)	// search for start of scan
 	Variable fileVar		// file ref number
 	Variable scanNum		// scan number to find
 
@@ -409,7 +409,7 @@ Macro LoadDelftData_mul(fileName,pathName,scalex,scaley,numdat,wantToDisp,concat
 End
 
 
-Function/T FLoadDelftData_mul(fileName,pathName,scalex,scaley,numdat,wantToDisp,concat,convMat,fdso)
+Function/S FLoadDelftData_mul(fileName,pathName,scalex,scaley,numdat,wantToDisp,concat,convMat,fdso)
 	String fileName
 	String pathName
 	Variable scalex,scaley,wantToDisp,convMat,numdat,fdso,concat
@@ -530,7 +530,7 @@ Function/T FLoadDelftData_mul(fileName,pathName,scalex,scaley,numdat,wantToDisp,
 	return(retstr)
 End
 
-Function/T FLoadDelftData_MCA(fileName,pathName,wvname,dt,fswap,wantToDisp)
+Function/S FLoadDelftData_MCA(fileName,pathName,wvname,dt,fswap,wantToDisp)
 	String fileName
 	String pathName,wvname
 	Variable dt,fswap,wantToDisp
