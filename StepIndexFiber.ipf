@@ -2114,9 +2114,16 @@ Function Func_FieldArrowPlotXY(scale,num)
 	Wave wv=$g_paramwv
 
 	Func_Show_Field_XY(num)
-	
+
 	String xdata="wfield_Ex",ydata="wfield_Ey"
-	PauseUpdate; Silent 1
+	ArrowPlotXY(scale,xdata,ydata)
+End
+
+Function ArrowPlotXY(scale,xdata,ydata)
+	Variable scale
+	String xdata,ydata	
+//	PauseUpdate; Silent 1
+
 //	wave wxwave=$xdata,wywave=$ydata
 	Variable nx=DimSize($xdata,0),ny=DimSize($xdata,1)
 	Duplicate/O $xdata,wxtemp
