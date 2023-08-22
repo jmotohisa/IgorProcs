@@ -1,6 +1,3 @@
-
-
-
 #pragma rtGlobals=1		// Use modern global access method.
 #include "AreaXYCursor"
 
@@ -9,6 +6,20 @@
 //
 //	revision history
 //		11/03/15	ver 0.01	first version, quick hack
+
+//
+// #include "LoadSPEdata2"
+// #include "LoadPLData"
+// #include "LoadDelftData"
+
+// // IL from glued spectra in combination with DS operation
+
+// DSOFwavesToMatrix("data",3,"","glue_il01")
+// DSOInvertPolarity(11,"",2)  // invert polarity
+// DSOFWaveAverage("data",11,"","il01_I") // current by taking average
+// DSOFIntegWave0("data",3,"","","il01_L") // integrate EL spectrum
+// Display il01_L vs il01_I // display EL vs Current
+
 
 Macro DisplayEL(index)
 	Variable index

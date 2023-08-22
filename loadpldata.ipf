@@ -219,7 +219,7 @@ Function FMultiPLdataLoad_DSO(thePath, expnml,nmschm,which,dsetnm,wantToPrint,fl
 End
 
 Macro LoadPLdata_csv(fileName,pathName,wvnamey,flag2)
-	String fileName, pathName="home", wvname
+	String fileName, pathName="home", wvnamey
 	Variable flag2=1;
 	Prompt flag2,"equal wavelength spacing ?", popup,"yes;intepolate;no"
 	Silent 1; PauseUpDate

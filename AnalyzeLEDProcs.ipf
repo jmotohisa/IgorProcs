@@ -11,11 +11,28 @@
 
 // analysis of I-L
 
+// // IL from glued spectra in combination with DS operation
+
+// DSOFwavesToMatrix("data",3,"","glue_il01")
+// DSOInvertPolarity(11,"",2)  // invert polarity
+// DSOFWaveAverage("data",11,"","il01_I") // current by taking average
+// DSOFIntegWave0("data",3,"","","il01_L") // integrate EL spectrum
+// Display il01_L vs il01_I // display EL vs Current
+
+
+
 // Basic procedure
 
 // spwv0: spectral wave ( default: ???_1)
 // wlwv0: wavelength wave (default: ???_0)
 // ivwv0 : I-V wave (default: ???_0_0)
+
+
+//
+// #include "LoadSPEdata2"
+// #include "LoadPLData"
+// #include "LoadDelftData"
+
 Function ShowIL(spwv0,wlwv0,ivwv0)
 	String spwv0,wlwv0,ivwv0
 	
@@ -262,4 +279,28 @@ Function FShowIVsemilog(wvname,mode)
 		AppendToGraph wdest
 		ModifyGraph log(left)=1
 	Endif
+End
+
+Function FsemiLogPlot(gname)
+	String gname
+	
+	String twaves=TraceNameList(gname,";",1)
+	String target,dest
+	Variable i=0
+	Display
+	Do
+		target = StringFromList(i,twaves)
+		if(strlen(target)<=0)
+			break
+		endif
+		dest=target+"_log"
+		Duplicate/O $target,$dest
+		Wave wdest=$dest
+		wdest=abs(wdest)
+		AppendToGraph $dest
+		i+=1
+	while(1)
+	ModifyGraph log(left)=1
+	String winame=gname+"_log"
+	DoWindow/C $winame
 End
