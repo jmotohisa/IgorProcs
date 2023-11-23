@@ -59,3 +59,51 @@ Function SpectrumAverageXY(xwave,ywave,xstart,xend)
 	Duplicate/O ywave,dummy
 	Return(SpectrumAverageXY0(NameofWave(xwave),NameofWave(ywave),"dummy",xstart,xend))
 End
+
+Function SpectrumAverageonGraph(grname,dest)
+	String grname,dest
+	
+	Variable xstart=hcsr(A)
+	Variable xend=hcsr(B)
+	
+	String trnames=TraceNameList(grname,";",1)
+	String twave
+	Variable i
+	i=0
+	Make/O $dest
+	Wave wdest=$dest
+	do
+		twave=StringFromList(i,trnames,";")
+		if(strlen(twave)==0)
+			break
+		endif
+//		Wave wtwave=$twave
+		wdest[i]=SpectrumAverage0(twave,"dummy",xstart,xend)
+		i+=1
+	while(1)
+	Redimension/N=(i) wdest
+End
+
+Function SpectrumAverageXYonGraph(grname,dest)
+	String grname,dest
+	
+	Variable xstart=hcsr(A)
+	Variable xend=hcsr(B)
+	
+	String trnames=TraceNameList(grname,";",1)
+	String txwave,tywave
+	Variable i
+	i=0
+	Make/O $dest
+	Wave wdest=$dest
+	do
+		tywave=StringFromList(i,trnames,";")
+		if(strlen(tywave)==0)
+			break
+		endif
+//		Wave wtwave=$twave
+		wdest[i]=SpectrumAverageXY0(txwave,tywave,"dummy",0,0)
+		i+=1
+	while(1)
+	Redimension/N=(i) wdest
+End

@@ -17,6 +17,12 @@ Menu "Fityk"
 	"Import peaks...",FitykImportAll()
 	"Display fit results...",DisplayCurves_Fitykall()
 	"Plot peaks...",DisplayPeaks_fityk()
+	"initialize...",InitFitykProcs()
+End
+
+Proc InitFitykProcs(bname)
+	String bname
+	String/G g_bname=bname
 End
  
 // data exporter
@@ -905,3 +911,128 @@ Function ShowArrangedPeakTable(dfindex,peakno)
 	AppendToTable $wvFWHM,$wvArea,$wvWind,$wvCind,$wvPind
 
 End
+
+Function mergePeakInfo(bname,start)
+	String bname
+	Variable start
+//	SVAR g_bname
+	
+	String saveDF=GetDataFolder(1)
+	String dfname=bname
+	SetDataFolder root:$dfname
+	
+	String pbname="P"+bname
+	String wvname0,wvname=pbname+"_name"
+	String wvcent0,wvCent=pbname+"_c"
+	String wvHght0,wvHght=pbname+"_h"
+	String wvFWHM0,wvFWHM=pbname+"_w"
+	String wvArea0,wvArea=pbname+"_a"
+//	String wvWind=pbname+"_Wi"
+//	String wvCind=pbname+"_Ci"
+//	String wvPind=pbname+"_Pi"
+	Variable i,n0,ntot
+	
+	i=start
+	ntot=0
+	do
+		wvcent0=pbname+"_"+num2istr(i)+"_c"
+		if(waveExists($wvcent0)==1)
+			ntot+=DimSize($wvcent0,0)
+		else
+			break
+		endif
+		i+=1
+	while(1)	
+//	print ntot
+	Variable iend=i
+
+	i=start
+	Make/T/O/N=(ntot) $wvname
+	Make/O/N=(0) $wvCent,$wvHght,$wvFWHM,$wvArea
+	Wave/T wwvname=$wvname
+	Wave wwvCent=$wvCent
+	Wave wwvHght=$wvHght
+	Wave wwvFWHM=$wvFWHM
+	Wave wwvArea=$wvArea
+	Edit wwvname,wwvCent,wwvHght,wwvFWHM,wwvArea
+	
+	Variable nstart=0,n
+	do
+		wvcent0=pbname+"_"+num2istr(i)+"_c"
+		wvHght0=pbname+"_"+num2istr(i)+"_h"
+		wvFWHM0=pbname+"_"+num2istr(i)+"_w"
+		wvArea0=pbname+"_"+num2istr(i)+"_a"
+
+		Wave wwvcent0=$wvCent0
+		Wave wwvHght0=$wvHght0
+		Wave wwvFWHM0=$wvFWHM0
+		Wave wwvArea0=$wvArea0
+		
+		n=DimSize($wvcent0,0)
+		print nstart,n
+		wwvname[nstart,nstart+n-1]=bname+"_"+num2istr(i)
+		Concatenate {wwvcent0},WwvCent
+		Concatenate {wwvHght0},WwvHght
+		Concatenate {wwvFWHM0},WwvFWHM
+		Concatenate {wwvArea0},WwvArea
+
+		nstart+=n
+		i+=1
+	while(i<iend)
+
+	SetDataFolder saveDF
+End
+
+Function FilterMergedPeakInfo(bname,xmin,xmax,index)
+	String bname
+	Variable xmin,xmax,index
+	
+	String saveDF=GetDataFolder(1)
+	String dfname=bname
+	SetDataFolder root:$dfname
+	
+	String pbname="P"+bname
+	String wvname0,wvname=pbname+"_name"
+	String wvcent0,wvCent=pbname+"_c"
+	String wvHght0,wvHght=pbname+"_h"
+	String wvFWHM0,wvFWHM=pbname+"_w"
+	String wvArea0,wvArea=pbname+"_a"
+//	String wvWind=pbname+"_Wi"
+//	String wvCind=pbname+"_Ci"
+//	String wvPind=pbname+"_Pi"
+
+	wvname0=pbname+"_P"+num2istr(index)+"_name"
+ 	wvcent0=pbname+"_P"+num2istr(index)+"_c"
+	wvHght0=pbname+"_P"+num2istr(index)+"_h"
+	wvFWHM0=pbname+"_P"+num2istr(index)+"_w"
+	wvArea0=pbname+"_P"+num2istr(index)+"_a"
+	
+	Duplicate/O $wvname,$wvname0
+	Duplicate/O $wvcent,$wvcent0
+	Duplicate/O $wvHght,$wvHght0
+	Duplicate/O $wvFWHM,$wvFWHM0
+	Duplicate/O $wvArea,$wvArea0
+	Wave/T wwvname0=$wvname0
+	Wave wwvcent0=$wvCent0
+	Wave wwvHght0=$wvHght0
+	Wave wwvFWHM0=$wvFWHM0
+	Wave wwvArea0=$wvArea0
+
+	Edit wwvname0,wwvcent0, wwvHght0,wwvFWHM0,wwvArea0
+	Variable n=DimSize(wwvcent0,0)
+	Variable i
+	do
+		if(wwvcent0[i]<xmin || wwvcent0[i]>xmax)
+			Deletepoints i,1, wwvname0
+			DeletePoints i,1, wwvcent0
+			DeletePoints i,1, wwvHght0
+			DeletePoints i,1, wwvFWHM0
+			DeletePoints i,1, wwvArea0
+		else
+			i+=1
+		endif
+	while(i<DimSize(wwvcent0,0))
+
+	SetDataFolder saveDF
+End
+	
