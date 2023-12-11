@@ -293,7 +293,7 @@ Function FsemiLogPlot(gname)
 		if(strlen(target)<=0)
 			break
 		endif
-		dest=target+"_log"
+		dest=target+"_abs"
 		Duplicate/O $target,$dest
 		Wave wdest=$dest
 		wdest=abs(wdest)
